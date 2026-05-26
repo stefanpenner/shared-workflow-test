@@ -13,12 +13,17 @@ steps:
       repository: stefanpenner/shared-workflow-test
       ref: ${{ github.job_workflow_sha }}
       path: _self
+      # Optional: only fetch the actions/ directory
+      sparse-checkout: actions
+      sparse-checkout-cone-mode: true
   - uses: ./_self/actions/setup
   - uses: ./_self/actions/lint
   - uses: ./_self/actions/test
 ```
 
-`github.job_workflow_sha` ensures the checkout matches the exact ref the consumer pinned.
+- `github.job_workflow_sha` ensures the checkout matches the exact ref the consumer pinned.
+- The `./` prefix on action paths is **required** — without it GHA interprets the path as `org/repo@ref`.
+- Sparse checkout is optional but keeps the clone minimal.
 
 ## Structure
 
