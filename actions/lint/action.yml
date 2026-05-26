@@ -1,0 +1,19 @@
+name: Lint
+description: Run linting checks
+
+inputs:
+  paths:
+    description: Paths to lint
+    default: "."
+  config:
+    description: Lint config file
+    default: ".eslintrc"
+
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      env:
+        LINT_PATHS: ${{ inputs.paths }}
+        LINT_CONFIG: ${{ inputs.config }}
+      run: "${{ github.action_path }}/scripts/run.sh"

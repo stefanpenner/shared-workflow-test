@@ -1,0 +1,19 @@
+name: Test
+description: Run the test suite
+
+inputs:
+  suite:
+    description: Which test suite to run
+    default: "unit"
+  coverage:
+    description: Enable coverage reporting
+    default: "true"
+
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      env:
+        TEST_SUITE: ${{ inputs.suite }}
+        COVERAGE_ENABLED: ${{ inputs.coverage }}
+      run: "${{ github.action_path }}/scripts/run.sh"

@@ -2,9 +2,13 @@ name: Shared Workflow
 
 on:
   workflow_call:
+    inputs:
+      project-name:
+        type: string
+        default: my-project
 
 jobs:
-  run-script:
+  ci:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -12,7 +16,16 @@ jobs:
           repository: stefanpenner/shared-workflow-test
           ref: ${{ github.job_workflow_sha }}
           path: _self
-          # Optional: only fetch the scripts/ directory
-          sparse-checkout: scripts
+          # Optional: only fetch the actions/ directory
+          sparse-checkout: actions
           sparse-checkout-cone-mode: true
-      - run: _self/scripts/hello.sh
+
+      - uses: ./_self/actions/setup
+        with:
+          project-name: ${{ inputs.project-name }}
+
+      - uses: ./_self/actions/lint
+
+      - uses: ./_self/actions/test
+        with:
+          suite: integration

@@ -1,10 +1,10 @@
 # shared-workflow-test
 
-A reusable GitHub Actions workflow that ships its own shell scripts.
+A reusable GitHub Actions workflow that ships its own composite actions and scripts.
 
 ## TL;DR
 
-Reusable workflows (`workflow_call`) are interpreted **server-side** by GitHub — the provider repo's files are never cloned to the runner. So if your shared workflow needs to run a script, it must check out its own repo first:
+Reusable workflows (`workflow_call`) are interpreted **server-side** by GitHub — the provider repo's files are never cloned to the runner. To use scripts or composite actions that live in the same repo, the workflow must check itself out first:
 
 ```yaml
 steps:
@@ -13,12 +13,29 @@ steps:
       repository: stefanpenner/shared-workflow-test
       ref: ${{ github.job_workflow_sha }}
       path: _self
-      sparse-checkout: scripts
-      sparse-checkout-cone-mode: true
-  - run: _self/scripts/hello.sh
+  - uses: ./_self/actions/setup
+  - uses: ./_self/actions/lint
+  - uses: ./_self/actions/test
 ```
 
-`github.job_workflow_sha` ensures the checkout matches the exact ref the consumer pinned (e.g. `@main`, `@v1`, `@abc123`).
+`github.job_workflow_sha` ensures the checkout matches the exact ref the consumer pinned.
+
+## Structure
+
+```
+actions/
+  setup/          # Set up the project environment
+    action.yml
+    scripts/run.sh
+  lint/           # Run linting checks
+    action.yml
+    scripts/run.sh
+  test/           # Run the test suite
+    action.yml
+    scripts/run.sh
+```
+
+Each action is self-contained: `action.yml` defines inputs/outputs and delegates to `scripts/run.sh` via `${{ github.action_path }}`.
 
 ## Usage
 
@@ -26,8 +43,10 @@ From any other repo:
 
 ```yaml
 jobs:
-  example:
+  ci:
     uses: stefanpenner/shared-workflow-test/.github/workflows/shared.yml@main
+    with:
+      project-name: my-app
 ```
 
 ## See also

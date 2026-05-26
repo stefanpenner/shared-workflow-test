@@ -1,0 +1,25 @@
+name: Setup
+description: Set up the project environment
+
+inputs:
+  project-name:
+    description: Name of the project
+    required: true
+  node-version:
+    description: Node version to use
+    default: "20"
+
+outputs:
+  node_version:
+    description: The resolved node version
+    value: ${{ steps.run.outputs.node_version }}
+
+runs:
+  using: composite
+  steps:
+    - id: run
+      shell: bash
+      env:
+        PROJECT_NAME: ${{ inputs.project-name }}
+        NODE_VERSION: ${{ inputs.node-version }}
+      run: "${{ github.action_path }}/scripts/run.sh"
