@@ -54,6 +54,21 @@ jobs:
       project-name: my-app
 ```
 
+## Private repos
+
+The default `GITHUB_TOKEN` is scoped to the caller repo. For private provider repos, pass a token with `contents: read` access:
+
+```yaml
+- uses: actions/checkout@v4
+  with:
+    repository: stefanpenner/shared-workflow-test
+    ref: ${{ github.job_workflow_sha }}
+    token: ${{ secrets.PROVIDER_REPO_TOKEN }}
+    path: _self
+```
+
+Alternatively, if both repos are in the same org, enable "Accessible from repositories in the organization" in the provider repo's Actions settings — then the caller's `GITHUB_TOKEN` works.
+
 ## See also
 
 - [shared-workflow-consumer](https://github.com/stefanpenner/shared-workflow-consumer) — example consumer repo
