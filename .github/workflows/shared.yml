@@ -12,6 +12,7 @@ jobs:
           repository: stefanpenner/shared-workflow-test
           ref: ${{ github.job_workflow_sha }}
           path: _self
+          # Optional: only fetch the scripts/ directory
           sparse-checkout: scripts
           sparse-checkout-cone-mode: true
       - run: _self/scripts/hello.sh
