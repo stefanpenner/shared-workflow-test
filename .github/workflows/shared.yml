@@ -20,12 +20,12 @@ jobs:
           sparse-checkout: actions
           sparse-checkout-cone-mode: true
 
-      - uses: ./_self/actions/setup
+      - uses: _self/actions/setup
         with:
           project-name: ${{ inputs.project-name }}
 
-      - uses: ./_self/actions/lint
+      - uses: _self/actions/lint
 
-      - uses: ./_self/actions/test
+      - uses: _self/actions/test
         with:
           suite: integration
