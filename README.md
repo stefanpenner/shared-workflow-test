@@ -8,39 +8,35 @@ Reusable workflows (`workflow_call`) are interpreted **server-side** by GitHub �
 
 ```yaml
 steps:
+  - name: Exclude shared actions from git
+    run: mkdir -p .git/info && echo '.github/_shared-workflow/' >> .git/info/exclude
+
   - uses: actions/checkout@v4
     with:
       repository: stefanpenner/shared-workflow-test
-      ref: ${{ github.job_workflow_sha }}
-      path: _self
-      # Optional: only fetch the actions/ directory
-      sparse-checkout: actions
-      sparse-checkout-cone-mode: true
-  - uses: ./_self/actions/setup
-  - uses: ./_self/actions/lint
-  - uses: ./_self/actions/test
+      ref: ${{ inputs.ref || 'main' }}
+      path: .github/_shared-workflow
+
+  - uses: ./.github/_shared-workflow/actions/setup
+  - uses: ./.github/_shared-workflow/actions/lint
+  - uses: ./.github/_shared-workflow/actions/test
 ```
 
-- `github.job_workflow_sha` ensures the checkout matches the exact ref the consumer pinned.
+- The workflow takes an explicit **`ref` input** so the caller controls which version of the actions is fetched. `github.job_workflow_sha` is empty in some contexts (e.g. `workflow_dispatch` self-tests), so an explicit input is more reliable.
+- Checking out into `.github/_shared-workflow` and adding it to `.git/info/exclude` keeps the fetched actions out of the consumer's working tree.
 - The `./` prefix on action paths is **required** — without it GHA interprets the path as `org/repo@ref`.
-- Sparse checkout is optional but keeps the clone minimal.
 
 ## Structure
 
 ```
 actions/
   setup/          # Set up the project environment
-    action.yaml
-    scripts/run.sh
   lint/           # Run linting checks
-    action.yaml
-    scripts/run.sh
   test/           # Run the test suite
-    action.yaml
-    scripts/run.sh
+  debug/          # Print file tree + git status (diagnostics)
 ```
 
-Each action is self-contained: `action.yaml` defines inputs/outputs and delegates to `scripts/run.sh` via `${{ github.action_path }}`.
+Each action is self-contained: `action.yaml` defines inputs/outputs and delegates to `scripts/run.sh` via `${{ github.action_path }}` (the `debug` action is inline).
 
 ## Usage
 
@@ -51,8 +47,11 @@ jobs:
   ci:
     uses: stefanpenner/shared-workflow-test/.github/workflows/shared.yaml@main
     with:
-      project-name: my-app
+      ref: main            # required: which version of the shared actions to fetch
+      project-name: my-app # optional
 ```
+
+To self-test within this repo, `ci.yaml` calls the workflow with `ref: ${{ github.sha }}`.
 
 ## Private repos
 
@@ -62,9 +61,9 @@ The default `GITHUB_TOKEN` is scoped to the caller repo. For private provider re
 - uses: actions/checkout@v4
   with:
     repository: stefanpenner/shared-workflow-test
-    ref: ${{ github.job_workflow_sha }}
+    ref: ${{ inputs.ref || 'main' }}
     token: ${{ secrets.PROVIDER_REPO_TOKEN }}
-    path: _self
+    path: .github/_shared-workflow
 ```
 
 Alternatively, if both repos are in the same org, enable "Accessible from repositories in the organization" in the provider repo's Actions settings — then the caller's `GITHUB_TOKEN` works.

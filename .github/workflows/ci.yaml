@@ -9,5 +9,5 @@ on:
 jobs:
   shared:
     uses: ./.github/workflows/shared.yaml
-    # with:
-    # ref: ${{ github.sha || '--non-existent-ref--'}}
+    with:
+      ref: ${{ github.sha || '--non-existent-ref--'}}
