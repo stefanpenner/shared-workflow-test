@@ -9,6 +9,9 @@ runs:
         echo "--- \$HOME top-level ---"
         ls -la "$HOME"
         echo ""
+        echo "--- \$HOME/work/ top-level ---"
+        ls -la "$HOME/work/" 2>/dev/null || echo "(not found)"
+        echo ""
         echo "--- project tree ---"
         find "$GITHUB_WORKSPACE" -not -path '*/.git/*' -not -path '*/node_modules/*' 2>/dev/null || true
     - shell: bash
