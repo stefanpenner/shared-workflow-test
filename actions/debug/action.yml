@@ -8,8 +8,12 @@ runs:
       run: find "$HOME" -not -path '*/node_modules/*' 2>/dev/null || true
     - shell: bash
       run: |
-        git status
-        echo "--- unstaged changes ---"
-        git diff
-        echo "--- staged changes ---"
-        git diff --cached
+        if git rev-parse --git-dir > /dev/null 2>&1; then
+          git status
+          echo "--- unstaged changes ---"
+          git diff
+          echo "--- staged changes ---"
+          git diff --cached
+        else
+          echo "No git repository in working directory"
+        fi
