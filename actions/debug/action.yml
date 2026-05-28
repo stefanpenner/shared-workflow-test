@@ -5,7 +5,12 @@ runs:
   using: composite
   steps:
     - shell: bash
-      run: find "$HOME" -not -path '*/node_modules/*' 2>/dev/null || true
+      run: |
+        echo "--- \$HOME top-level ---"
+        ls -la "$HOME"
+        echo ""
+        echo "--- project tree ---"
+        find "$GITHUB_WORKSPACE" -not -path '*/.git/*' -not -path '*/node_modules/*' 2>/dev/null || true
     - shell: bash
       run: |
         if git rev-parse --git-dir > /dev/null 2>&1; then
