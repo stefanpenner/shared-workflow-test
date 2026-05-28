@@ -1,7 +1,6 @@
 name: Shared Workflow
 
 on:
-  push:
   workflow_call:
     inputs:
       project-name:

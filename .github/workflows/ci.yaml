@@ -1,0 +1,10 @@
+name: Use Shared Workflow
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  call-shared:
+    uses: ./shared.yml
