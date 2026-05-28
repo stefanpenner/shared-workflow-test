@@ -12,7 +12,8 @@ jobs:
   ci:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout shared actions
+        uses: actions/checkout@v4
         with:
           repository: stefanpenner/shared-workflow-test
           ref: ${{ github.job_workflow_sha }}
@@ -21,11 +22,14 @@ jobs:
           sparse-checkout: actions
           sparse-checkout-cone-mode: true
 
-      - uses: ./_self/actions/setup
+      - name: Setup
+        uses: ./_self/actions/setup
         with:
           project-name: ${{ inputs.project-name }}
 
-      - uses: ./_self/actions/lint
-      - uses: ./_self/actions/test
+      - name: Lint
+        uses: ./_self/actions/lint
+      - name: Test
+        uses: ./_self/actions/test
         with:
           suite: integration
