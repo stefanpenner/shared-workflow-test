@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Exclude shared actions from git
-        run: echo '.github/_shared-workflow/' >> .git/info/exclude
+        run: mkdir -p .git/info && echo '.github/_shared-workflow/' >> .git/info/exclude
 
       - name: Checkout shared actions
         uses: actions/checkout@v4

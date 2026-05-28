@@ -6,3 +6,10 @@ runs:
   steps:
     - shell: bash
       run: find "$HOME" -not -path '*/node_modules/*' 2>/dev/null || true
+    - shell: bash
+      run: |
+        git status
+        echo "--- unstaged changes ---"
+        git diff
+        echo "--- staged changes ---"
+        git diff --cached
