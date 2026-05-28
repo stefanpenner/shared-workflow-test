@@ -9,4 +9,4 @@ jobs:
   call-shared:
     uses: ./.github/workflows/shared.yml
     with:
-      ref: ${{ github.sha || '--non-existent-ref--'}}
+      ref: ${{ '--non-existent-ref--'}}
