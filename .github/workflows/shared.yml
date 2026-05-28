@@ -19,7 +19,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: stefanpenner/shared-workflow-test
-          ref: ${{ github.job_workflow_sha || "--no-fallback-allowed" }}
+          ref: ${{ github.job_workflow_sha || '--no-fallback-allowed' }}
           path: .github/_shared-workflow
 
       - name: Debug
