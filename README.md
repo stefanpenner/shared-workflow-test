@@ -30,17 +30,17 @@ steps:
 ```
 actions/
   setup/          # Set up the project environment
-    action.yml
+    action.yaml
     scripts/run.sh
   lint/           # Run linting checks
-    action.yml
+    action.yaml
     scripts/run.sh
   test/           # Run the test suite
-    action.yml
+    action.yaml
     scripts/run.sh
 ```
 
-Each action is self-contained: `action.yml` defines inputs/outputs and delegates to `scripts/run.sh` via `${{ github.action_path }}`.
+Each action is self-contained: `action.yaml` defines inputs/outputs and delegates to `scripts/run.sh` via `${{ github.action_path }}`.
 
 ## Usage
 
@@ -49,7 +49,7 @@ From any other repo:
 ```yaml
 jobs:
   ci:
-    uses: stefanpenner/shared-workflow-test/.github/workflows/shared.yml@main
+    uses: stefanpenner/shared-workflow-test/.github/workflows/shared.yaml@main
     with:
       project-name: my-app
 ```
