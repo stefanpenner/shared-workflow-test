@@ -13,8 +13,6 @@ jobs:
           ref: ${{ github.job_workflow_sha }}
           path: _self
           token: ""
-          sparse-checkout: actions
-          sparse-checkout-cone-mode: true
 
       - uses: ./_self/actions/setup
         with:
