@@ -8,3 +8,5 @@ on:
 jobs:
   call-shared:
     uses: ./.github/workflows/shared.yml
+    with:
+      ref: ${{ github.sha }}
