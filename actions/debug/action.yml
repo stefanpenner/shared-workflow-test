@@ -1,0 +1,8 @@
+name: Debug
+description: Print the full file tree from $HOME
+
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      run: find "$HOME" -not -path '*/node_modules/*' 2>/dev/null || true
