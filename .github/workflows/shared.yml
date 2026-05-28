@@ -24,8 +24,7 @@ jobs:
         with:
           project-name: ${{ inputs.project-name }}
 
-      - uses: ./_self/actions/lint
-
-      - uses: ./_self/actions/test
+      - uses: ../_self/actions/lint
+      - uses: ../_self/actions/test
         with:
           suite: integration
