@@ -12,24 +12,24 @@ jobs:
   ci:
     runs-on: ubuntu-latest
     steps:
+      - name: Exclude shared actions from git
+        run: echo '.github/_shared-workflow/' >> .git/info/exclude
+
       - name: Checkout shared actions
         uses: actions/checkout@v4
         with:
           repository: stefanpenner/shared-workflow-test
-          ref: ${{ github.job_workflow_sha }}
-          path: _self
-          # Optional: only fetch the actions/ directory
-          sparse-checkout: actions
-          sparse-checkout-cone-mode: true
+          ref: ${{ github.job_workflow_sha || "--no-fallback-allowed" }}
+          path: .github/_shared-workflow
 
       - name: Setup
-        uses: ./_self/actions/setup
+        uses: ./.github/_shared-workflow/actions/setup
         with:
           project-name: ${{ inputs.project-name }}
 
       - name: Lint
-        uses: ./_self/actions/lint
+        uses: ./.github/_shared-workflow/actions/lint
       - name: Test
-        uses: ./_self/actions/test
+        uses: ./.github/_shared-workflow/actions/test
         with:
           suite: integration
