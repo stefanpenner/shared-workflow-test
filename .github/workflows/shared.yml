@@ -21,7 +21,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: stefanpenner/shared-workflow-test
-          ref: ${{ inputs.ref }}
+          ref: ${{ inputs.ref || 'main'}}
           path: .github/_shared-workflow
 
       - name: Debug
