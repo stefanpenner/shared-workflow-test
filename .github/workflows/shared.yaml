@@ -14,12 +14,12 @@ jobs:
   ci:
     runs-on: ubuntu-latest
     steps:
-      # Clone this repo's actions OUTSIDE the workspace (../_reusable-workflows), so they never show in
-      # the consumer's git status — no .git/info/exclude needed — then reference them via traversal
-      # `uses: ./../_reusable-workflows/...`. The clone action is pinned to a literal ref (a `uses:`
-      # ref can't be an expression); it clones the provider at the dynamic `ref` input.
+      # Check this repo's actions out OUTSIDE the workspace (../_reusable-workflows), so they never
+      # show in the consumer's git status — no .git/info/exclude needed — then reference them via
+      # traversal `uses: ./../_reusable-workflows/...`. The checkout action is pinned to a literal
+      # ref (a `uses:` ref can't be an expression); it checks the provider out at the `ref` input.
       - name: Set up shared actions
-        uses: stefanpenner-cs/clone-action@v1
+        uses: stefanpenner/checkout-anywhere@v1
         with:
           repository: stefanpenner-cs/reusable-workflows
           ref: ${{ inputs.ref || 'main' }}
