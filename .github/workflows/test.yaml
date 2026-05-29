@@ -24,7 +24,7 @@ jobs:
           repository-cache: true
 
       - name: No inline scripts
-        run: bazelisk run //tools/guard
+        run: bazelisk run //tools/no-inline-scripts
 
       - name: Build + test
         run: bazelisk test //... --config=ci

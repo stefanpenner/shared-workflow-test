@@ -8,7 +8,7 @@ and built with **Bazel**). Follow them exactly.
 1. **No inline scripts in YAML.** Every action/workflow `run:` is a single external invocation —
    `bazelisk run //…`, `go …`, or a bare script — never embedded shell logic (`&&`, `||`, `;`, `|`,
    `>`, `$(...)`, `run: |` blocks). `actions/github-script` is banned (it embeds inline JS). Enforced
-   by `internal/guard`, run in CI as `bazelisk run //tools/guard`.
+   by `internal/noinlinescripts`, run in CI as `bazelisk run //tools/no-inline-scripts`.
 2. **Go, pure, built with Bazel.** All code is Go (`CGO_ENABLED=0`, no cgo — see `.bazelrc`), built
    and tested with **Bazel** via **bazelisk** (version pinned in `.bazelversion`). `rules_go` +
    `gazelle` + `hermetic_cc_toolchain`; the Go SDK is downloaded by Bazel. Third-party deps: cobra
@@ -37,7 +37,7 @@ and built with **Bazel**). Follow them exactly.
 - `actions/<x>/main.go`, `shadow/cmd/<x>/main.go` — thin cobra entrypoints (`go_binary`). The only
   place that parses argv / reads env sinks / writes files. Targets: `//actions/<x>`,
   `//shadow/cmd/<x>`.
-- `tools/guard`, `tools/covergate` — CI tools.
+- `tools/no-inline-scripts`, `tools/covergate` — CI tools.
 
 ## Style
 
@@ -61,7 +61,7 @@ markdown table to `$GITHUB_STEP_SUMMARY`, logs as plain text. GitHub ops go thro
 ## Run locally (what CI runs)
 
 ```sh
-bazelisk run //tools/guard          # no inline run: blocks
+bazelisk run //tools/no-inline-scripts          # no inline run: blocks
 bazelisk test //...                 # every *_test.go
 go run ./tools/covergate -min 90    # line-coverage gate over the pure layers
 golangci-lint run                   # Go lint

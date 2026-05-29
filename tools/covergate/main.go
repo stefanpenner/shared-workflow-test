@@ -19,7 +19,7 @@ import (
 var gatedPackages = []string{
 	"./internal/ghactions/...",
 	"./internal/actions/...",
-	"./internal/guard/...",
+	"./internal/noinlinescripts/...",
 	"./internal/shadow/core/...",
 }
 

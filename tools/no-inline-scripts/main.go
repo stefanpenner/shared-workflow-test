@@ -1,6 +1,6 @@
 // Command guard is the no-inline-scripts check: discover every action + workflow YAML, run the
 // guard, and exit non-zero on any violation. Invoked from CI (test.yaml). Discovery (the old
-// check-no-inline-scripts.cli.mjs) lives here; the rules live in internal/guard.
+// check-no-inline-scripts.cli.mjs) lives here; the rules live in internal/noinlinescripts.
 package main
 
 import (
@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/stefanpenner-cs/reusable-workflows/internal/guard"
+	"github.com/stefanpenner-cs/reusable-workflows/internal/noinlinescripts"
 )
 
 // listDir returns directory entry names, tolerating only a missing directory.
@@ -63,7 +63,7 @@ func main() {
 			fmt.Fprintf(os.Stderr, "could not read %s for inline-script check: %v\n", f, err)
 			os.Exit(1)
 		}
-		for _, v := range guard.InlineErrors(string(content), guard.AllowNames) {
+		for _, v := range noinlinescripts.InlineErrors(string(content), noinlinescripts.AllowNames) {
 			fmt.Fprintf(os.Stderr, "✗ %s:%d  %s\n", f, v.Line, v.Message)
 			violations++
 		}
