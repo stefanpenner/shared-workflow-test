@@ -1,9 +1,10 @@
-// Command guard is the no-inline-scripts check: discover every action + workflow YAML, run the
-// guard, and exit non-zero on any violation. Invoked from CI (test.yaml). Discovery (the old
-// check-no-inline-scripts.cli.mjs) lives here; the rules live in internal/noinlinescripts.
+// Command no-inline-scripts checks every action + workflow YAML against the no-inline-scripts rules
+// and exits non-zero on any violation (CI, via //tools:lint). With --fix it instead auto-formats:
+// splits multi-flag run: statements one-per-line. Discovery lives here; rules in internal/noinlinescripts.
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -46,6 +47,9 @@ func discover() []string {
 }
 
 func main() {
+	fix := flag.Bool("fix", false, "auto-format: split multi-flag run: statements one per line")
+	flag.Parse()
+
 	// `bazel run` executes in the runfiles tree; BUILD_WORKSPACE_DIRECTORY points back at the repo
 	// root so discovery sees the real actions/ and .github/workflows/.
 	if ws := os.Getenv("BUILD_WORKSPACE_DIRECTORY"); ws != "" {
@@ -56,6 +60,11 @@ func main() {
 	}
 
 	files := discover()
+	if *fix {
+		formatFiles(files)
+		return
+	}
+
 	violations := 0
 	for _, f := range files {
 		content, err := os.ReadFile(f)
@@ -73,4 +82,27 @@ func main() {
 		os.Exit(1)
 	}
 	fmt.Printf("✓ no-inline-scripts: %d file(s) clean\n", len(files))
+}
+
+// formatFiles rewrites multi-flag run: statements one-per-line, in place.
+func formatFiles(files []string) {
+	fixed := 0
+	for _, f := range files {
+		content, err := os.ReadFile(f)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "could not read %s: %v\n", f, err)
+			os.Exit(1)
+		}
+		formatted, changed := noinlinescripts.Format(string(content))
+		if !changed {
+			continue
+		}
+		if err := os.WriteFile(f, []byte(formatted), 0o644); err != nil {
+			fmt.Fprintf(os.Stderr, "could not write %s: %v\n", f, err)
+			os.Exit(1)
+		}
+		fmt.Printf("formatted %s\n", f)
+		fixed++
+	}
+	fmt.Printf("✓ run-args format: %d file(s) changed\n", fixed)
 }
