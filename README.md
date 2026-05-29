@@ -2,41 +2,54 @@
 
 A reusable GitHub Actions workflow that ships its own composite actions and scripts.
 
-## TL;DR
+## Why — the GitHub gaps
 
-Reusable workflows (`workflow_call`) are interpreted **server-side** by GitHub — the provider repo's files are never cloned to the runner. To use scripts or composite actions that live in the same repo, the workflow must get them onto the runner first. We clone them **outside the workspace** and reference them via traversal `uses:`:
+Reusable workflows (`workflow_call`) are interpreted **server-side**: the provider repo's files —
+its scripts and composite actions — **never reach the runner**. GitHub offers no native "use the
+calling workflow's own repo files," so a workflow that wants to run its own scripts must put them on
+the runner itself. Two constraints shape how:
+
+- **`uses:` can't be an expression** — and the provider repo isn't on disk to host a local
+  bootstrap action — so the bootstrap must be an _external_ action
+  ([`checkout-anywhere`](https://github.com/stefanpenner/checkout-anywhere)).
+- **A local `uses:` must start with `./`**, even when it traverses out with `..`; a bare leading
+  `..` is rejected by the workflow parser.
+
+## How
+
+The workflow checks itself out onto the runner **outside the workspace**, then references its
+actions by path:
 
 ```yaml
 steps:
   - name: Set up shared actions
-    uses: stefanpenner-cs/clone-action@v1
+    uses: stefanpenner/checkout-anywhere@v1
     with:
       repository: stefanpenner-cs/reusable-workflows
-      ref: ${{ inputs.ref || 'main' }}   # branch / tag / SHA
-      path: ../_reusable-workflows          # outside $GITHUB_WORKSPACE
+      ref: ${{ inputs.ref || 'main' }} # branch / tag / SHA
+      path: ../_reusable-workflows # outside $GITHUB_WORKSPACE
 
   - uses: ./../_reusable-workflows/actions/setup
   - uses: ./../_reusable-workflows/actions/lint
   - uses: ./../_reusable-workflows/actions/test
 ```
 
-- The workflow takes an explicit **`ref` input** so the caller controls which version of the actions is fetched. `github.job_workflow_sha` is empty in some contexts (e.g. `workflow_dispatch` self-tests), so an explicit input is more reliable.
-- [`clone-action`](https://github.com/stefanpenner-cs/clone-action) clones to **`../_reusable-workflows`** (outside the workspace), so the fetched actions never appear in the consumer's `git status` — no `.git/info/exclude` needed. (It's a separate action because a `uses:` ref can't be an expression, and the reusable workflow's own repo isn't on disk to host a local one.)
-- `uses: ./../_reusable-workflows/...` works — a local `uses:` may traverse out of the workspace with `..`, **as long as it starts with `./`** (a bare leading `..` is rejected by the workflow parser).
+Checking out to `../_reusable-workflows` (outside `$GITHUB_WORKSPACE`) keeps the fetched files out of
+the consumer's `git status` — no `.git/info/exclude` needed.
 
-## How it fits together
+### How it fits together
 
-Four repos under `stefanpenner-cs`:
+Four repos — three under `stefanpenner-cs`, plus `stefanpenner/checkout-anywhere`:
 
 ```
 reusable-workflows                  this repo — the reusable workflow + its composite actions + shadow/
-clone-action                        clones a repo@ref into any path (the bootstrap)
+stefanpenner/checkout-anywhere      checks out a repo@ref into any path (the bootstrap)
 reusable-workflows-shadow-testing   "runner" — isolated venue where shadow PRs run a consumer's CI
 reusable-workflows-consumer         an example consumer
 
 Consume ─ any repo calls the reusable workflow:
   consumer/ci.yaml ──uses──▶ reusable-workflows/.github/workflows/shared.yaml@<ref>
-      └ shared.yaml ──uses clone-action@v1──▶ ../_reusable-workflows   (this repo @ref, OUTSIDE the workspace)
+      └ shared.yaml ──uses checkout-anywhere@v1──▶ ../_reusable-workflows   (this repo @ref, OUTSIDE the workspace)
                     └ uses ./../_reusable-workflows/actions/{setup,lint,test,debug}
 
 Shadow-test ─ label this repo's PR `shadow-test`, run each consumer against the draft:
@@ -44,84 +57,49 @@ Shadow-test ─ label this repo's PR `shadow-test`, run each consumer against th
       └ each shadow PR runs the consumer's real CI vs the PR draft  →  PR check "Shadow: <consumer>"
 ```
 
-## Structure
+## What
 
-```
-actions/
-  setup/   # Set up the project environment
-  lint/    # Run linting checks
-  test/    # Run the test suite
-  debug/   # Print file tree + git status (diagnostics)
-scripts/
-  lib/guard/   # check-no-inline-scripts: enforces the "no inline scripts" rule
-  lib/log/     # shared output formatting
-shadow/        # pre-merge testing against real consumers — see shadow/README.md
-```
+Composite actions, each self-contained (`action.yaml` + tested Node scripts):
 
-Each action is self-contained: `action.yaml` defines inputs/outputs and invokes an
-external Node script via `node ${{ github.action_path }}/scripts/<name>.cli.mjs`.
+| action  | does                                       |
+| ------- | ------------------------------------------ |
+| `setup` | set up the project environment             |
+| `lint`  | run linting checks                         |
+| `test`  | run the test suite                         |
+| `debug` | print file tree + git status (diagnostics) |
 
-## Scripts &amp; testing conventions
+The action bodies are intentionally **scaffolds** — they echo their inputs rather than do real
+work. This project's focus is the **glue** (getting a provider's own scripts onto the runner,
+above) and the **testing story**: every script is unit-tested under a coverage-gated `node --test`
+harness, and `shadow/` integration-tests changes against real consumers before merge. To make an
+action do real work, drop the logic into its `*.mjs`.
 
-All executable logic lives in **external scripts**, never in inline `run:` blocks
-(see the guard below). Each script follows a three-file pattern:
-
-- `<name>.mjs` — pure logic, no side effects on import, no `process.env` reads. Imported by the test.
-- `<name>.cli.mjs` — thin entry the action invokes; reads env and does the real I/O.
-- `<name>.test.mjs` — [`node:test`](https://nodejs.org/api/test.html) + `node:assert`, **zero `node_modules`**.
-
-One harness covers the whole repo — the actions and shared scripts (`.mjs`) plus
-[`shadow/`](shadow/) (`.mts`, run natively on Node 24). Reproduce CI
-(`.github/workflows/test.yaml`) locally:
-
-```sh
-node scripts/lib/guard/check-no-inline-scripts.cli.mjs   # no inline run: blocks
-node scripts/lint.mjs                                    # eslint + prettier (.mjs/.mts/YAML) + import allowlist
-node shadow/src/bin/check-deps.mts                       # shadow's only runtime dep is `yaml`
-node shadow/typecheck.mjs                                # isolated tsc --noEmit
-node --test '**/*.test.{mjs,mts}'                        # tests (CI also gates coverage — see test.yaml)
-```
-
-The only third-party tooling is dev-only — `eslint` + `prettier` lint the repo's own `.mjs`,
-`.mts`, and YAML (`npm run lint:fix` auto-resolves) and enforce a **module allowlist** (imports
-limited to `node:*`, relative, `yaml`, `@actions/*`); the action/script runtime stays
-dependency-free.
-CI runs all of the above on every push and PR and adds a coverage gate (thresholds in `test.yaml`).
-There is **no** inline `run:` exception: `shared.yaml` bootstraps with
-[`stefanpenner-cs/clone-action`](https://github.com/stefanpenner-cs/clone-action), which clones
-this repo to `../_reusable-workflows` (outside the workspace, so nothing leaks into the consumer's
-`git status`); the actions are then referenced via `uses: ./../_reusable-workflows/...`.
-
-## Usage
-
-From any other repo:
+Use it from any repo:
 
 ```yaml
 jobs:
   ci:
     uses: stefanpenner-cs/reusable-workflows/.github/workflows/shared.yaml@main
     with:
-      ref: main            # required: which version of the shared actions to fetch
+      ref: main # required: which version of the actions to fetch
       project-name: my-app # optional
 ```
 
-To self-test within this repo, `ci.yaml` calls the workflow with `ref: ${{ github.sha }}`.
+`shadow/` pre-merge-tests this repo's own changes against real consumers — see
+[`shadow/README.md`](shadow/README.md). Repo conventions (no inline scripts, Node + tested, lint,
+CLI args) live in [`CLAUDE.md`](CLAUDE.md).
 
-## Private repos
+## Caveats
 
-The default `GITHUB_TOKEN` is scoped to the caller repo. For private provider repos, pass a token with `contents: read` access to the clone action:
-
-```yaml
-- uses: stefanpenner-cs/clone-action@v1
-  with:
-    repository: stefanpenner-cs/reusable-workflows
-    ref: ${{ inputs.ref || 'main' }}
-    path: ../_reusable-workflows
-    token: ${{ secrets.PROVIDER_REPO_TOKEN }}
-```
-
-Alternatively, if both repos are in the same org, enable "Accessible from repositories in the organization" in the provider repo's Actions settings — then the caller's `GITHUB_TOKEN` works.
+- **Pass an explicit `ref`.** `github.job_workflow_sha` is empty in some contexts (e.g.
+  `workflow_dispatch` self-tests), so the caller pins the version via the `ref` input.
+- **Keep the `./` prefix** on action paths — without it GHA reads the path as `org/repo@ref`.
+- **Private provider repo:** give `checkout-anywhere` a token with `contents: read`
+  (`token: ${{ secrets.PROVIDER_REPO_TOKEN }}`), or enable org-wide Actions access so the caller's
+  `GITHUB_TOKEN` works.
+- The checked-out actions live **outside the workspace**, so they never show up in the consumer's
+  working tree.
 
 ## See also
 
-- [reusable-workflows-consumer](https://github.com/stefanpenner-cs/reusable-workflows-consumer) — example consumer repo
+- [reusable-workflows-consumer](https://github.com/stefanpenner-cs/reusable-workflows-consumer) — example consumer

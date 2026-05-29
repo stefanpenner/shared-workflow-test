@@ -3,7 +3,7 @@
 // for testing; file discovery and process exit live in check-no-inline-scripts.cli.mjs.
 
 // Step names allowed to keep inline `run:` logic, each with a justification. Empty: the former
-// bootstrap exception is gone — shared.yaml now uses stefanpenner-cs/clone-action (no inline run:).
+// bootstrap exception is gone — shared.yaml now uses stefanpenner/checkout-anywhere (no inline run:).
 export const ALLOW_NAMES = new Set([]);
 
 // Shell metacharacters that indicate embedded logic rather than a single invocation.

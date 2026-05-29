@@ -9,8 +9,8 @@ Follow them exactly.
    an external file — `node ${{ github.action_path }}/scripts/<x>.cli.mjs`. No `run: |`
    logic; no one-liners with shell operators (`&&`, `||`, `;`, `|`, `>`, `$(...)`). This
    is enforced by `scripts/lib/guard/check-no-inline-scripts`, run in `test.yaml`. There is
-   **no** inline exception: `shared.yaml` bootstraps via `stefanpenner-cs/clone-action`
-   (clones this repo to `../_reusable-workflows`, referenced via `uses: ./../_reusable-workflows/...`),
+   **no** inline exception: `shared.yaml` bootstraps via `stefanpenner/checkout-anywhere`
+   (checks this repo out to `../_reusable-workflows`, referenced via `uses: ./../_reusable-workflows/...`),
    so even that step is a plain `uses:`. (The guard still supports an injectable allowlist, but
    it's empty.) `actions/github-script` is also banned — it embeds an inline JS `script:` body.
 2. **Node + tested; runtime stays dependency-free.** Scripts are ESM `.mjs` on **Node 24**,
