@@ -1,8 +1,8 @@
 import { appendFileSync } from 'node:fs';
 import { parseArgs } from 'node:util';
-import { requireEnv } from '../core/requireEnv.ts';
-import { resolveContext } from '../core/resolveContext.ts';
-import { capture } from '../adapters/exec.ts';
+import { requireEnv } from '../core/requireEnv.mts';
+import { resolveContext } from '../core/resolveContext.mts';
+import { capture } from '../adapters/exec.mts';
 
 /**
  * Workflows setup entrypoint: resolve the PR number + head SHA to shadow-test and emit them on
@@ -34,7 +34,7 @@ async function main(): Promise<void> {
   });
 
   appendFileSync(requireEnv('GITHUB_OUTPUT'), `pr=${pr}\nsha=${sha}\n`);
-  console.log(`resolved PR #${pr} @ ${sha}`);
+  console.log(`✅ resolved PR #${pr} @ ${sha.slice(0, 7)}`);
 }
 
 main().catch((error) => {

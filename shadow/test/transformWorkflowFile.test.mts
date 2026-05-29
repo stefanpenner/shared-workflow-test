@@ -2,7 +2,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import _yaml from '../vendor/yaml/index.js';
 const { parse } = _yaml;
-import { transformWorkflowFile } from '../src/core/transformWorkflowFile.ts';
+import { transformWorkflowFile } from '../src/core/transformWorkflowFile.mts';
 
 const SHA = '0123456789abcdef0123456789abcdef01234567';
 const opts = { workflowsRepo: 'stefanpenner-cs/reusable-workflows', workflowsRef: SHA };

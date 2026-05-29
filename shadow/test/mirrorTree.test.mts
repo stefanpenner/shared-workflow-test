@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync, existsSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { mirrorTree } from '../src/core/mirrorTree.ts';
+import { mirrorTree } from '../src/core/mirrorTree.mts';
 
 let src: string;
 let dest: string;

@@ -1,12 +1,12 @@
 import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { requireArgs } from '../core/args.ts';
-import { requireEnv } from '../core/requireEnv.ts';
-import { mirrorTree } from '../core/mirrorTree.ts';
-import { patchWorkflowsInDir } from '../adapters/workflows.ts';
-import * as git from '../adapters/git.ts';
-import * as github from '../adapters/github.ts';
+import { requireArgs } from '../core/args.mts';
+import { requireEnv } from '../core/requireEnv.mts';
+import { mirrorTree } from '../core/mirrorTree.mts';
+import { patchWorkflowsInDir } from '../adapters/workflows.mts';
+import * as git from '../adapters/git.mts';
+import * as github from '../adapters/github.mts';
 
 /**
  * Receiver entrypoint (runs in H on workflow_dispatch). Mirrors the consumer's code onto a shadow

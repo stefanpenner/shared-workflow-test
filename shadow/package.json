@@ -1,5 +1,10 @@
 {
   "name": "reusable-workflows-shadow-testing",
   "private": true,
-  "type": "module"
+  "type": "module",
+  "comment": "Runtime is npm-free (Node 24 strips types; yaml is vendored). devDependencies exist ONLY for the isolated type-check (node typecheck.mjs -> tsc --noEmit).",
+  "devDependencies": {
+    "typescript": "^5.7.2",
+    "@types/node": "^22.10.2"
+  }
 }

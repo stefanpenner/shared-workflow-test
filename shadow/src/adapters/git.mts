@@ -1,4 +1,4 @@
-import { capture, run } from './exec.ts';
+import { capture, run } from './exec.mts';
 
 const git = (args: string[], cwd?: string) => capture('git', args, { cwd });
 

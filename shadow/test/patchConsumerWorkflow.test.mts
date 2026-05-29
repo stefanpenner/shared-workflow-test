@@ -2,7 +2,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import _yaml from '../vendor/yaml/index.js';
 const { parse } = _yaml;
-import { patchConsumerWorkflow } from '../src/core/patchConsumerWorkflow.ts';
+import { patchConsumerWorkflow } from '../src/core/patchConsumerWorkflow.mts';
 
 const WORKFLOWS = 'stefanpenner-cs/reusable-workflows';
 const SHA = '0123456789abcdef0123456789abcdef01234567';

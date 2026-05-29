@@ -2,7 +2,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import _yaml from '../vendor/yaml/index.js';
 const { parse } = _yaml;
-import { ensurePullRequestTrigger } from '../src/core/ensurePullRequestTrigger.ts';
+import { ensurePullRequestTrigger } from '../src/core/ensurePullRequestTrigger.mts';
 
 describe('ensurePullRequestTrigger', () => {
   it('adds pull_request to a mapping `on:` that lacks it', () => {

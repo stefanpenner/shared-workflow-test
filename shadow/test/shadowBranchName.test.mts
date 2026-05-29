@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { shadowBranchName } from '../src/core/shadowBranchName.ts';
+import { shadowBranchName } from '../src/core/shadowBranchName.mts';
 
 describe('shadowBranchName', () => {
   it('builds shadow/pr-<n>-<slug> from the consumer repo', () => {

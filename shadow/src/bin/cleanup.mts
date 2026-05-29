@@ -1,9 +1,9 @@
 import { readFileSync } from 'node:fs';
-import { requireArgs } from '../core/args.ts';
-import { requireEnv } from '../core/requireEnv.ts';
-import { parseConsumers } from '../core/parseConsumers.ts';
-import { shadowBranchName } from '../core/shadowBranchName.ts';
-import * as github from '../adapters/github.ts';
+import { requireArgs } from '../core/args.mts';
+import { requireEnv } from '../core/requireEnv.mts';
+import { parseConsumers } from '../core/parseConsumers.mts';
+import { shadowBranchName } from '../core/shadowBranchName.mts';
+import * as github from '../adapters/github.mts';
 
 /** Workflows entrypoint (runs on pull_request: closed). Tears down every consumer's shadow PR +
  * branch in the runner for this workflows PR. */

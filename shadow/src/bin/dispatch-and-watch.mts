@@ -1,14 +1,13 @@
 import { appendFileSync } from 'node:fs';
-import { requireArgs } from '../core/args.ts';
-import { requireEnv } from '../core/requireEnv.ts';
-import { shadowBranchName } from '../core/shadowBranchName.ts';
-import { renderShadowSummary, type ShadowResult } from '../core/summary.ts';
-import type { ShadowContext } from '../core/dispatch.ts';
-import * as github from '../adapters/github.ts';
+import { requireArgs } from '../core/args.mts';
+import { requireEnv } from '../core/requireEnv.mts';
+import { shadowBranchName } from '../core/shadowBranchName.mts';
+import { renderShadowSummary, renderShadowLog, type ShadowResult } from '../core/summary.mts';
+import type { ShadowContext } from '../core/dispatch.mts';
+import * as github from '../adapters/github.mts';
 
-/** Append markdown to the GitHub job summary (the shadow check's page); also log it. */
-function writeJobSummary(markdown: string): void {
-  console.log(markdown);
+/** Append markdown to the job-summary page only (GitHub step logs don't render markdown). */
+function appendSummary(markdown: string): void {
   const file = process.env.GITHUB_STEP_SUMMARY;
   if (file) appendFileSync(file, markdown);
 }
@@ -35,29 +34,27 @@ async function main(): Promise<void> {
   const runId = await github.dispatchReceiver({ runnerRepo, ctx, token });
   const runUrl = `https://github.com/${runnerRepo}/actions/runs/${runId}`;
 
-  // One clear, linked annotation up front (PR / repos / run) — no per-step polling noise.
-  console.log(
-    `::notice title=Shadow test::🛰️ ${consumerRepo} vs ${workflowsRepo}#${workflowsPr} — runner run: ${runUrl}`,
-  );
+  // Up front: clean plain-text lines (logs don't render markdown) + one linked annotation.
+  console.log(`🛰️  Shadow test: ${consumerRepo}@${consumerRef}`);
+  console.log(`    vs ${workflowsRepo} PR #${workflowsPr} — runner run: ${runUrl}`);
+  console.log(`::notice title=Shadow test::🛰️ ${consumerRepo} — runner run: ${runUrl}`);
 
-  const summarize = async (result: ShadowResult): Promise<string | null> => {
+  const finish = async (result: ShadowResult): Promise<string | null> => {
     const prUrl = await github.findPrUrl({ repo: runnerRepo, branch, token });
-    writeJobSummary(
-      renderShadowSummary({ consumerRepo, consumerRef, workflowsRepo, workflowsRef, workflowsPr, result, runUrl, prUrl }),
-    );
+    const fields = { consumerRepo, consumerRef, workflowsRepo, workflowsRef, workflowsPr, result, runUrl, prUrl };
+    appendSummary(renderShadowSummary(fields)); // markdown → the summary page (renders there)
+    for (const line of renderShadowLog(fields)) console.log(line); // plain text → the step log
     return prUrl;
   };
 
   try {
     await github.watchRun({ runnerRepo, runId, token });
   } catch (error) {
-    const prUrl = await summarize('failed');
-    // Red annotation that links straight to where the failure is visible.
-    console.log(`::error title=Shadow test failed::❌ ${consumerRepo} — see ${prUrl ?? runUrl}`);
+    const prUrl = await finish('failed');
+    console.log(`::error title=Shadow test failed::❌ ${consumerRepo} — open ${prUrl ?? runUrl} to see the failing job`);
     throw error;
   }
-  await summarize('passed');
-  console.log(`::notice title=Shadow test passed::✅ ${consumerRepo}`);
+  await finish('passed');
 }
 
 main().catch((error) => {

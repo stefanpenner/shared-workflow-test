@@ -4,7 +4,7 @@ import { execFileSync } from 'node:child_process';
 import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { configureBotIdentity, commitAll, headSha } from '../src/adapters/git.ts';
+import { configureBotIdentity, commitAll, headSha } from '../src/adapters/git.mts';
 
 async function repoWithCommit(content: string): Promise<{ dir: string; sha: string }> {
   const dir = mkdtempSync(join(tmpdir(), 'git-'));

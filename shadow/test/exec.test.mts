@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { capture, run } from '../src/adapters/exec.ts';
+import { capture, run } from '../src/adapters/exec.mts';
 
 describe('exec', () => {
   it('capture returns stdout', async () => {

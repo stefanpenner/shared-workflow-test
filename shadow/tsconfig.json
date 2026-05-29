@@ -1,0 +1,16 @@
+{
+  "//": "Type-check only. Runtime never uses this — Node 24 strips types on invocation. tsc is run in isolation via `node typecheck.mjs`.",
+  "compilerOptions": {
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "target": "esnext",
+    "lib": ["esnext"],
+    "types": ["node"],
+    "strict": true,
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true
+  },
+  "include": ["src/**/*.mts", "test/**/*.mts"]
+}

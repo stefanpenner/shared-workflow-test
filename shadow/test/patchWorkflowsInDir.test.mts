@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import _yaml from '../vendor/yaml/index.js';
 const { parse } = _yaml;
-import { patchWorkflowsInDir } from '../src/adapters/workflows.ts';
+import { patchWorkflowsInDir } from '../src/adapters/workflows.mts';
 
 const SHA = '0123456789abcdef0123456789abcdef01234567';
 const opts = { workflowsRepo: 'stefanpenner-cs/reusable-workflows', workflowsRef: SHA };

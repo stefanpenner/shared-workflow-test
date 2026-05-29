@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { renderShadowSummary } from '../src/core/summary.ts';
+import { renderShadowSummary, renderShadowLog } from '../src/core/summary.mts';
 
 const base = {
   consumerRepo: 'o/consumer',
@@ -34,5 +34,22 @@ describe('renderShadowSummary', () => {
     const md = renderShadowSummary({ ...base, result: 'passed', prUrl: null });
     assert.doesNotMatch(md, /Shadow PR/);
     assert.match(md, /Runner run/);
+  });
+});
+
+describe('renderShadowLog', () => {
+  it('returns plain-text lines (no markdown) with clickable URLs', () => {
+    const lines = renderShadowLog({ ...base, result: 'passed' });
+    const text = lines.join('\n');
+    assert.match(text, /✅ Shadow test passed: o\/consumer@main/);
+    assert.match(text, /runner run: https:\/\/example\.com\/run/);
+    assert.match(text, /shadow PR:  https:\/\/example\.com\/pr/);
+    assert.doesNotMatch(text, /\]\(|^#{1,6} |^\|/m); // no markdown links/headings/tables
+  });
+
+  it('omits the shadow PR line when none exists', () => {
+    const lines = renderShadowLog({ ...base, result: 'failed', prUrl: null });
+    assert.ok(lines.some((l) => l.includes('❌ Shadow test failed')));
+    assert.ok(!lines.some((l) => l.includes('shadow PR')));
   });
 });

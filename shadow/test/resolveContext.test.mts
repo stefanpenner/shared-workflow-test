@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { resolveContext } from '../src/core/resolveContext.ts';
+import { resolveContext } from '../src/core/resolveContext.mts';
 
 const noLookup = async (): Promise<string> => {
   throw new Error('should not look up');

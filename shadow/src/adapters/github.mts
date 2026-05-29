@@ -1,6 +1,6 @@
 import { setTimeout as delay } from 'node:timers/promises';
-import { capture, run } from './exec.ts';
-import { buildDispatchInputs, classifyRunState, extractRunId, type ShadowContext } from '../core/dispatch.ts';
+import { capture, run } from './exec.mts';
+import { buildDispatchInputs, classifyRunState, extractRunId, type ShadowContext } from '../core/dispatch.mts';
 
 const RECEIVER_WORKFLOW = 'receiver.yaml';
 

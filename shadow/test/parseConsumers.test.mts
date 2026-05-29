@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseConsumers } from '../src/core/parseConsumers.ts';
+import { parseConsumers } from '../src/core/parseConsumers.mts';
 
 describe('parseConsumers', () => {
   it('parses a list of {repo, ref}', () => {

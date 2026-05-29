@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { referencesWorkflowsRepo } from '../src/core/patchConsumerWorkflow.ts';
+import { referencesWorkflowsRepo } from '../src/core/patchConsumerWorkflow.mts';
 
 const WORKFLOWS = 'stefanpenner-cs/reusable-workflows';
 

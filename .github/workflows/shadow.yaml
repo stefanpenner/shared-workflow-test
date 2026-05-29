@@ -42,11 +42,11 @@ jobs:
         id: ctx
         env:
           GH_TOKEN: ${{ github.token }}
-        run: node shadow/src/bin/resolve-ctx.ts --event-name=${{ github.event_name }} --pr-number=${{ github.event.pull_request.number }} --head-sha=${{ github.event.pull_request.head.sha }} --input-pr=${{ inputs.pr }} --workflows-repo=${{ github.repository }}
+        run: node shadow/src/bin/resolve-ctx.mts --event-name=${{ github.event_name }} --pr-number=${{ github.event.pull_request.number }} --head-sha=${{ github.event.pull_request.head.sha }} --input-pr=${{ inputs.pr }} --workflows-repo=${{ github.repository }}
 
       - name: List consumers
         id: list
-        run: node shadow/src/bin/list-consumers.ts --consumers-file=${{ github.workspace }}/.github/shadow-consumers.json
+        run: node shadow/src/bin/list-consumers.mts --consumers-file=${{ github.workspace }}/.github/shadow-consumers.json
 
   shadow:
     needs: prepare
@@ -63,4 +63,4 @@ jobs:
       - name: Dispatch and watch
         env:
           SHADOW_PAT: ${{ secrets.SHADOW_PAT }}
-        run: node shadow/src/bin/dispatch-and-watch.ts --runner-repo=${{ env.RUNNER_REPO }} --workflows-repo=${{ github.repository }} --workflows-ref=${{ needs.prepare.outputs.sha }} --workflows-pr=${{ needs.prepare.outputs.pr }} --consumer-repo=${{ matrix.consumer.repo }} --consumer-ref=${{ matrix.consumer.ref }}
+        run: node shadow/src/bin/dispatch-and-watch.mts --runner-repo=${{ env.RUNNER_REPO }} --workflows-repo=${{ github.repository }} --workflows-ref=${{ needs.prepare.outputs.sha }} --workflows-pr=${{ needs.prepare.outputs.pr }} --consumer-repo=${{ matrix.consumer.repo }} --consumer-ref=${{ matrix.consumer.ref }}

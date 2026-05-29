@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { transformWorkflowFile } from '../core/transformWorkflowFile.ts';
-import { referencesWorkflowsRepo, type PatchOptions } from '../core/patchConsumerWorkflow.ts';
+import { transformWorkflowFile } from '../core/transformWorkflowFile.mts';
+import { referencesWorkflowsRepo, type PatchOptions } from '../core/patchConsumerWorkflow.mts';
 
 /** Mirror-transform the consumer's workflow files under `<rootDir>/.github/workflows`. Only files
  * that actually call the workflows are touched — leaving unrelated workflows (e.g. a deploy job)

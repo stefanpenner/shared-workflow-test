@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { requireEnv } from '../src/core/requireEnv.ts';
+import { requireEnv } from '../src/core/requireEnv.mts';
 
 describe('requireEnv', () => {
   it('returns the value when set and non-empty', () => {

@@ -38,3 +38,18 @@ export function renderShadowSummary(input: ShadowSummaryInput): string {
   lines.push('');
   return lines.join('\n');
 }
+
+/**
+ * Render the result as plain-text log lines (GitHub job logs don't render markdown). Clickable URLs,
+ * no markup. The markdown version above is for the job-summary page; this is for the step log.
+ */
+export function renderShadowLog(input: ShadowSummaryInput): string[] {
+  const icon = input.result === 'passed' ? '✅' : '❌';
+  const lines = [
+    `${icon} Shadow test ${input.result}: ${input.consumerRepo}@${input.consumerRef}`,
+    `   vs ${input.workflowsRepo} PR #${input.workflowsPr} (${input.workflowsRef.slice(0, 7)})`,
+    `   runner run: ${input.runUrl}`,
+  ];
+  if (input.prUrl) lines.push(`   shadow PR:  ${input.prUrl}`);
+  return lines;
+}

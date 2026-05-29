@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildDispatchInputs, extractRunId, classifyRunState } from '../src/core/dispatch.ts';
+import { buildDispatchInputs, extractRunId, classifyRunState } from '../src/core/dispatch.mts';
 
 describe('buildDispatchInputs', () => {
   it('maps the shadow context to the receiver workflow_dispatch inputs (all strings)', () => {

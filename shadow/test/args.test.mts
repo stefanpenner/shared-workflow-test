@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { requireArgs } from '../src/core/args.ts';
+import { requireArgs } from '../src/core/args.mts';
 
 describe('requireArgs', () => {
   it('reads named string flags (space and = forms)', () => {
