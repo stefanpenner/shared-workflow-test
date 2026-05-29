@@ -12,22 +12,22 @@ function fakeExec(map, throwFor = []) {
   };
 }
 
-test("treeReport prints section headers and command output", () => {
+test("treeReport wraps section output in an Environment group", () => {
   const exec = fakeExec({
     "ls -la /home/u": "total 0",
     "ls -la /home/u/work/": "drwxr-xr-x work",
   });
   const out = treeReport(exec, { HOME: "/home/u", GITHUB_WORKSPACE: "/ws" });
-  assert.match(out, /--- \$HOME top-level ---/);
+  assert.match(out, /^::group::Environment\n/);
+  assert.match(out, /\n::endgroup::$/);
+  assert.match(out, /\$HOME:/);
   assert.match(out, /total 0/);
-  assert.match(out, /drwxr-xr-x work/);
-  assert.match(out, /--- project tree ---/);
+  assert.match(out, /project tree:/);
 });
 
 test("treeReport falls back to (not found) when the work dir listing fails", () => {
   const exec = fakeExec({}, ["ls -la /home/u/work/"]);
-  const out = treeReport(exec, { HOME: "/home/u" });
-  assert.match(out, /\(not found\)/);
+  assert.match(treeReport(exec, { HOME: "/home/u" }), /\(not found\)/);
 });
 
 test("treeReport defaults HOME and GITHUB_WORKSPACE when env is absent", () => {
@@ -44,7 +44,7 @@ test("treeReport defaults HOME and GITHUB_WORKSPACE when env is absent", () => {
   );
 });
 
-test("gitReport prints status and diff sections inside a repo", () => {
+test("gitReport groups status and diff sections inside a repo", () => {
   const exec = fakeExec({
     "git rev-parse --git-dir": ".git",
     "git status": "On branch main",
@@ -52,14 +52,32 @@ test("gitReport prints status and diff sections inside a repo", () => {
     "git diff --cached": "staged-diff",
   });
   const out = gitReport(exec);
+  assert.match(out, /^::group::Git status\n/);
   assert.match(out, /On branch main/);
-  assert.match(out, /--- unstaged changes ---/);
+  assert.match(out, /unstaged changes:/);
   assert.match(out, /unstaged-diff/);
-  assert.match(out, /--- staged changes ---/);
+  assert.match(out, /staged changes:/);
   assert.match(out, /staged-diff/);
 });
 
 test("gitReport reports no repository when git rev-parse fails", () => {
   const exec = fakeExec({}, ["git rev-parse"]);
-  assert.equal(gitReport(exec), "No git repository in working directory");
+  assert.equal(
+    gitReport(exec),
+    "::group::Git status\nNo git repository in working directory\n::endgroup::",
+  );
+});
+
+test("treeReport rethrows programming errors instead of swallowing them", () => {
+  const exec = () => {
+    throw new TypeError("exec is not a function");
+  };
+  assert.throws(() => treeReport(exec, { HOME: "/h" }), TypeError);
+});
+
+test("gitReport rethrows programming errors instead of swallowing them", () => {
+  const exec = () => {
+    throw new TypeError("exec is not a function");
+  };
+  assert.throws(() => gitReport(exec), TypeError);
 });

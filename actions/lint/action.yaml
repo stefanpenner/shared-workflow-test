@@ -4,10 +4,10 @@ description: Run linting checks
 inputs:
   paths:
     description: Paths to lint
-    default: "."
+    default: .
   config:
     description: Lint config file
-    default: ".eslintrc"
+    default: .eslintrc
 
 runs:
   using: composite

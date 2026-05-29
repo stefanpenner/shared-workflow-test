@@ -1,0 +1,70 @@
+name: Shadow test consumers
+
+# On a labeled PR (or manual dispatch), run this PR's draft against each real consumer under an
+# authentic pull_request event in the shadow runner, and report the result here. All logic lives in
+# shadow/ in THIS repo and runs from this checkout; the runner repo is only the dispatch venue.
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled]
+  workflow_dispatch:
+    inputs:
+      pr:
+        description: workflows PR number to shadow-test
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: shadow-${{ github.event.pull_request.number || inputs.pr }}
+  cancel-in-progress: true
+
+env:
+  RUNNER_REPO: stefanpenner-cs/reusable-workflows-shadow-testing
+
+jobs:
+  prepare:
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.pull_request.labels.*.name, 'shadow-test')
+    runs-on: ubuntu-latest
+    outputs:
+      consumers: ${{ steps.list.outputs.consumers }}
+      pr: ${{ steps.ctx.outputs.pr }}
+      sha: ${{ steps.ctx.outputs.sha }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Resolve PR + head SHA
+        id: ctx
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node shadow/src/bin/resolve-ctx.mts --event-name=${{ github.event_name }} --pr-number=${{ github.event.pull_request.number }} --head-sha=${{ github.event.pull_request.head.sha }} --input-pr=${{ inputs.pr }} --workflows-repo=${{ github.repository }}
+
+      - name: List consumers
+        id: list
+        run: node shadow/src/bin/list-consumers.mts --consumers-file=${{ github.workspace }}/.github/shadow-consumers.json --workflows-pr=${{ steps.ctx.outputs.pr }} --runner-repo=${{ env.RUNNER_REPO }}
+
+  # Named per consumer so the PR check reads "Shadow: <consumer>" and stays grouped under this
+  # workflow. (A Checks-API check run created from here can't choose its check-suite, so it ends up
+  # mis-grouped under another workflow — naming the job avoids that.)
+  shadow:
+    name: "Shadow: ${{ matrix.consumer.repo }}"
+    needs: prepare
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        consumer: ${{ fromJSON(needs.prepare.outputs.consumers) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Dispatch and watch
+        env:
+          SHADOW_PAT: ${{ secrets.SHADOW_PAT }}
+        run: node shadow/src/bin/dispatch-and-watch.mts --runner-repo=${{ env.RUNNER_REPO }} --workflows-repo=${{ github.repository }} --workflows-ref=${{ needs.prepare.outputs.sha }} --workflows-pr=${{ needs.prepare.outputs.pr }} --consumer-repo=${{ matrix.consumer.repo }} --consumer-ref=${{ matrix.consumer.ref }}

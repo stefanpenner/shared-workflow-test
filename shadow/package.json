@@ -1,0 +1,13 @@
+{
+  "name": "reusable-workflows-shadow-testing",
+  "private": true,
+  "type": "module",
+  "comment": "yaml is the ONLY runtime dependency (enforced by check-deps). devDependencies are the isolated type-check tooling. Runtime strips types via Node 24.",
+  "devDependencies": {
+    "typescript": "^5.7.2",
+    "@types/node": "^22.10.2"
+  },
+  "dependencies": {
+    "yaml": "^2.6.1"
+  }
+}

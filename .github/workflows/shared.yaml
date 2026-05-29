@@ -14,32 +14,29 @@ jobs:
   ci:
     runs-on: ubuntu-latest
     steps:
-      # This is the ONE sanctioned inline run: in the repo — it runs before any
-      # checkout, so no repo-local script exists on disk yet to call. The
-      # no-inline-scripts guard whitelists it by this exact step name.
-      # TODO: replace these two steps with a dedicated "setup-shared-actions"
-      # GitHub Action once published, so consumers get a single `uses:`.
-      - name: Set up shared actions (exclude from git)
-        run: mkdir -p .git/info && echo '.github/_shared-workflow/' >> .git/info/exclude
-
-      - name: Set up shared actions (checkout)
-        uses: actions/checkout@v4
+      # Clone this repo's actions OUTSIDE the workspace (../_reusable-workflows), so they never show in
+      # the consumer's git status — no .git/info/exclude needed — then reference them via traversal
+      # `uses: ./../_reusable-workflows/...`. The clone action is pinned to a literal ref (a `uses:`
+      # ref can't be an expression); it clones the provider at the dynamic `ref` input.
+      - name: Set up shared actions
+        uses: stefanpenner-cs/clone-action@v1
         with:
           repository: stefanpenner-cs/reusable-workflows
-          ref: ${{ inputs.ref || 'main'}}
-          path: .github/_shared-workflow
+          ref: ${{ inputs.ref || 'main' }}
+          path: ../_reusable-workflows
 
       - name: Debug
-        uses: ./.github/_shared-workflow/actions/debug
+        uses: ./../_reusable-workflows/actions/debug
 
       - name: Setup
-        uses: ./.github/_shared-workflow/actions/setup
+        uses: ./../_reusable-workflows/actions/setup
         with:
           project-name: ${{ inputs.project-name }}
 
       - name: Lint
-        uses: ./.github/_shared-workflow/actions/lint
+        uses: ./../_reusable-workflows/actions/lint
+
       - name: Test
-        uses: ./.github/_shared-workflow/actions/test
+        uses: ./../_reusable-workflows/actions/test
         with:
           suite: integration

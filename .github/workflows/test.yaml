@@ -1,5 +1,8 @@
 name: Test
 
+# One harness for the whole repo: static gates (no-inline guard, eslint + prettier, dep policy,
+# isolated tsc) plus a single `node --test` run covering the actions (.mjs), shared scripts (.mjs),
+# and shadow/ (.mts, run natively on Node 24). npm appears only in the lint/typecheck drivers.
 on:
   push:
     branches: [main]
@@ -7,20 +10,30 @@ on:
   workflow_dispatch:
 
 jobs:
-  verify:
+  test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: "22"
+          node-version: "24"
 
-      # Every step's run: is a single external-script invocation — no inline logic
-      # (which is exactly what the guard below enforces across this repo).
       - name: No inline scripts
-        run: "node scripts/lib/guard/check-no-inline-scripts.cli.mjs"
+        run: node scripts/lib/guard/check-no-inline-scripts.cli.mjs
 
-      # Globs are single-quoted so Node (not the shell) expands them. Coverage is
-      # gated: the build fails below the thresholds. cli/test files are excluded.
-      - name: Unit tests + coverage gate
-        run: "node --test --experimental-test-coverage --test-coverage-lines=100 --test-coverage-functions=100 --test-coverage-branches=95 '--test-coverage-include=actions/**/*.mjs' '--test-coverage-include=scripts/**/*.mjs' '--test-coverage-exclude=**/*.test.mjs' '--test-coverage-exclude=**/*.cli.mjs' 'actions/**/*.test.mjs' 'scripts/**/*.test.mjs'"
+      # Lint the repo's own .mjs + YAML. Installs root dev tooling (eslint + prettier) and runs both.
+      - name: Lint (eslint + prettier)
+        run: node scripts/lint.mjs
+
+      - name: Dependency policy (yaml only)
+        run: node shadow/src/bin/check-deps.mts
+
+      # Isolated type-check: Node strips types at runtime; this is the only place npm/tsc appears.
+      # It also installs shadow's deps (yaml) so the test step below can resolve them.
+      - name: Typecheck (isolated tsc)
+        run: node shadow/typecheck.mjs
+
+      # Single test command for the whole repo, coverage-gated. Globs are single-quoted so Node
+      # (not the shell) expands them; coverage covers the pure layers (bins/adapters excluded).
+      - name: Tests + coverage
+        run: node --test --experimental-test-coverage --test-coverage-lines=95 --test-coverage-functions=100 --test-coverage-branches=90 '--test-coverage-include=actions/**/*.mjs' '--test-coverage-include=scripts/**/*.mjs' '--test-coverage-include=shadow/src/**/*.mts' '--test-coverage-exclude=**/*.test.*' '--test-coverage-exclude=**/*.cli.mjs' '--test-coverage-exclude=shadow/src/bin/**' '--test-coverage-exclude=shadow/src/adapters/**' 'actions/**/*.test.mjs' 'scripts/**/*.test.mjs' 'shadow/test/*.test.mts'

@@ -1,6 +1,11 @@
 // Pure logic for the Test action.
-export function testSummary(suite, coverage) {
+import { section } from "../../../scripts/lib/log/format.mjs";
+
+export function report(suite, coverage) {
   const resolvedSuite = (suite ?? "").trim() || "unit";
-  const resolvedCoverage = (coverage ?? "").trim() || "true";
-  return `Running tests...\nSuite: ${resolvedSuite}\nCoverage: ${resolvedCoverage}`;
+  const coverageOn = (coverage ?? "").trim().toLowerCase() !== "false";
+  return section("Test", {
+    suite: resolvedSuite,
+    coverage: coverageOn ? "enabled" : "disabled",
+  });
 }
