@@ -32,6 +32,25 @@ Follow them exactly.
   Attribute failures and chain the original with `new Error('context', { cause: err })`.
 - A `.cli.mjs` is the only place that reads env / writes files; keep it tiny.
 
+## Shadow testing (`shadow/`)
+
+All shadow-testing logic lives in `shadow/` in **this** repo (one place to change it). It's a
+small TypeScript project run on raw Node 24; it is the **one npm+`node_modules` island** (it
+depends on `yaml` for comment-preserving workflow edits), kept entirely inside `shadow/` so the
+actions above stay zero-dep. Its CI (typecheck + lint + `node:test`) runs via `bash shadow/ci.sh`.
+
+Terminology (used consistently in code, env vars, and docs):
+
+- **workflows** = this repo (`reusable-workflows`) — its PRs are what we test (`WORKFLOWS_REPO`/`_REF`/`_PR`).
+- **runner** = `reusable-workflows-shadow-testing` — the venue where shadow PRs run a consumer's CI; it's a thin `receiver.yaml` shim that checks out this repo and runs `shadow/`.
+- **consumer** = a downstream repo (from `.github/shadow-consumers.json`) we mirror to verify the draft doesn't break it.
+
+Provider-invoked bins (`list-consumers`, `dispatch-and-watch`, `cleanup`) are dependency-free and
+run on raw Node 24; only `mirror-and-test` (in the runner's receiver) uses `yaml`. Don't pull a dep
+into a dep-free bin's import graph. Result is reported as a **job summary** on the shadow check (no
+PR comments); the dispatch job watches **silently** — no per-step polling logs, just links + a clear
+pass/fail (failures emit a red `::error::` annotation linking to where to look).
+
 ## Run locally (what CI runs)
 
 ```sh

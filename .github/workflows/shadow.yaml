@@ -1,20 +1,17 @@
 name: Shadow test consumers
 
 # On a labeled PR (or manual dispatch), run this PR's draft state against each real consumer under
-# an authentic pull_request event in the shadow harness, and reflect the result back here.
+# an authentic pull_request event in the shadow runner, and reflect the result back here.
+# All logic lives in shadow/ in THIS repo and runs from this checkout; the runner repo is only the
+# dispatch venue (see shadow/README and the receiver shim there).
 on:
   pull_request:
     types: [opened, synchronize, reopened, labeled]
   workflow_dispatch:
     inputs:
       pr:
-        description: provider PR number to shadow-test
+        description: workflows PR number to shadow-test
         required: true
-        type: string
-      harness_ref:
-        description: harness branch/tag to run the shadow system from (for dogfooding harness changes)
-        required: false
-        default: main
         type: string
 
 permissions:
@@ -26,7 +23,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  HARNESS_REPO: stefanpenner-cs/reusable-workflows-shadow-testing
+  RUNNER_REPO: stefanpenner-cs/reusable-workflows-shadow-testing
 
 jobs:
   prepare:
@@ -38,8 +35,11 @@ jobs:
       sha: ${{ steps.ctx.outputs.sha }}
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
 
-      - name: actionlint (cheap gate on the provider draft)
+      - name: actionlint (cheap gate on the workflows draft)
         run: bash scripts/shadow/actionlint.sh
 
       - name: Resolve PR + head SHA
@@ -52,20 +52,11 @@ jobs:
           INPUT_PR: ${{ inputs.pr }}
         run: bash scripts/shadow/resolve-ctx.sh
 
-      - uses: actions/checkout@v4
-        with:
-          repository: ${{ env.HARNESS_REPO }}
-          ref: ${{ inputs.harness_ref || 'main' }}
-          path: .shadow-harness
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 24
       - name: List consumers
         id: list
-        working-directory: .shadow-harness
         env:
           CONSUMERS_FILE: ${{ github.workspace }}/.github/shadow-consumers.json
-        run: node src/bin/list-consumers.ts
+        run: node shadow/src/bin/list-consumers.ts
 
   shadow:
     needs: prepare
@@ -76,20 +67,16 @@ jobs:
         consumer: ${{ fromJSON(needs.prepare.outputs.consumers) }}
     steps:
       - uses: actions/checkout@v4
-        with:
-          repository: ${{ env.HARNESS_REPO }}
-          ref: ${{ inputs.harness_ref || 'main' }}
       - uses: actions/setup-node@v4
         with:
           node-version: 24
       - name: Dispatch and watch
-        run: node src/bin/dispatch-and-watch.ts
+        run: node shadow/src/bin/dispatch-and-watch.ts
         env:
-          HARNESS_REPO: ${{ env.HARNESS_REPO }}
-          HARNESS_REF: ${{ inputs.harness_ref || 'main' }}
-          PROVIDER_REPO: ${{ github.repository }}
-          PROVIDER_REF: ${{ needs.prepare.outputs.sha }}
-          PROVIDER_PR: ${{ needs.prepare.outputs.pr }}
+          RUNNER_REPO: ${{ env.RUNNER_REPO }}
+          WORKFLOWS_REPO: ${{ github.repository }}
+          WORKFLOWS_REF: ${{ needs.prepare.outputs.sha }}
+          WORKFLOWS_PR: ${{ needs.prepare.outputs.pr }}
           CONSUMER_REPO: ${{ matrix.consumer.repo }}
           CONSUMER_REF: ${{ matrix.consumer.ref }}
           SHADOW_PAT: ${{ secrets.SHADOW_PAT }}

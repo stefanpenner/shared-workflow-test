@@ -24,3 +24,15 @@ jobs:
       # gated: the build fails below the thresholds. cli/test files are excluded.
       - name: Unit tests + coverage gate
         run: "node --test --experimental-test-coverage --test-coverage-lines=100 --test-coverage-functions=100 --test-coverage-branches=95 '--test-coverage-include=actions/**/*.mjs' '--test-coverage-include=scripts/**/*.mjs' '--test-coverage-exclude=**/*.test.mjs' '--test-coverage-exclude=**/*.cli.mjs' 'actions/**/*.test.mjs' 'scripts/**/*.test.mjs'"
+
+  # The shadow/ subtree is the one npm+TypeScript island (it depends on `yaml`); its own
+  # typecheck/lint/node:test pipeline runs behind a single external script.
+  shadow:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: shadow/ typecheck + lint + test
+        run: bash shadow/ci.sh

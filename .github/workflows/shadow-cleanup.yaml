@@ -1,6 +1,7 @@
 name: Shadow cleanup
 
-# When a provider PR closes, tear down its shadow PRs + branches in the harness.
+# When a workflows PR closes, tear down its shadow PRs + branches in the runner.
+# Runs shadow/ from this repo's own checkout (cleanup is dependency-free → raw Node 24).
 on:
   pull_request:
     types: [closed]
@@ -9,26 +10,20 @@ permissions:
   contents: read
 
 env:
-  HARNESS_REPO: stefanpenner-cs/reusable-workflows-shadow-testing
+  RUNNER_REPO: stefanpenner-cs/reusable-workflows-shadow-testing
 
 jobs:
   cleanup:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/checkout@v4
-        with:
-          repository: ${{ env.HARNESS_REPO }}
-          ref: main
-          path: .shadow-harness
       - uses: actions/setup-node@v4
         with:
           node-version: 24
       - name: Tear down shadow PRs + branches
-        working-directory: .shadow-harness
         env:
-          HARNESS_REPO: ${{ env.HARNESS_REPO }}
-          PROVIDER_PR: ${{ github.event.pull_request.number }}
+          RUNNER_REPO: ${{ env.RUNNER_REPO }}
+          WORKFLOWS_PR: ${{ github.event.pull_request.number }}
           CONSUMERS_FILE: ${{ github.workspace }}/.github/shadow-consumers.json
           SHADOW_PAT: ${{ secrets.SHADOW_PAT }}
-        run: node src/bin/cleanup.ts
+        run: node shadow/src/bin/cleanup.ts
