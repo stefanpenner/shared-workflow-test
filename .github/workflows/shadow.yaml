@@ -55,14 +55,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-          cache: npm
-          cache-dependency-path: .shadow-harness/package-lock.json
       - name: List consumers
         id: list
         working-directory: .shadow-harness
         env:
           CONSUMERS_FILE: ${{ github.workspace }}/.github/shadow-consumers.json
-        run: bash "$GITHUB_WORKSPACE/scripts/shadow/list-consumers.sh"
+        run: node src/bin/list-consumers.ts
 
   shadow:
     needs: prepare
@@ -72,21 +70,15 @@ jobs:
       matrix:
         consumer: ${{ fromJSON(needs.prepare.outputs.consumers) }}
     steps:
-      # The harness is the working tree (root); the provider repo is checked out
-      # alongside under .provider so its scripts/ are on disk to invoke.
       - uses: actions/checkout@v4
         with:
           repository: ${{ env.HARNESS_REPO }}
           ref: main
-      - uses: actions/checkout@v4
-        with:
-          path: .provider
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-          cache: npm
       - name: Dispatch and watch
-        run: bash .provider/scripts/shadow/dispatch.sh
+        run: node src/bin/dispatch-and-watch.ts
         env:
           HARNESS_REPO: ${{ env.HARNESS_REPO }}
           PROVIDER_REPO: ${{ github.repository }}
