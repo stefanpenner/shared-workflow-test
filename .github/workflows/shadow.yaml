@@ -46,7 +46,7 @@ jobs:
 
       - name: List consumers
         id: list
-        run: node shadow/src/bin/list-consumers.mts --consumers-file=${{ github.workspace }}/.github/shadow-consumers.json
+        run: node shadow/src/bin/list-consumers.mts --consumers-file=${{ github.workspace }}/.github/shadow-consumers.json --workflows-pr=${{ steps.ctx.outputs.pr }} --runner-repo=${{ env.RUNNER_REPO }}
 
   # Named per consumer so the PR check reads "Shadow: <consumer>" and stays grouped under this
   # workflow. (A Checks-API check run created from here can't choose its check-suite, so it ends up

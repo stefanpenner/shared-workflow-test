@@ -37,6 +37,8 @@ actions/
   debug/   # Print file tree + git status (diagnostics)
 scripts/
   lib/guard/   # check-no-inline-scripts: enforces the "no inline scripts" rule
+  lib/log/     # shared output formatting
+shadow/        # pre-merge testing against real consumers — see shadow/README.md
 ```
 
 Each action is self-contained: `action.yaml` defines inputs/outputs and invokes an
@@ -51,20 +53,20 @@ All executable logic lives in **external scripts**, never in inline `run:` block
 - `<name>.cli.mjs` — thin entry the action invokes; reads env and does the real I/O.
 - `<name>.test.mjs` — [`node:test`](https://nodejs.org/api/test.html) + `node:assert`, **zero `node_modules`**.
 
-Run the suite (and the coverage gate) locally exactly as CI does:
+One harness covers the whole repo — the actions and shared scripts (`.mjs`) plus
+[`shadow/`](shadow/) (`.mts`, run natively on Node 24). Reproduce CI
+(`.github/workflows/test.yaml`) locally, no install needed:
 
 ```sh
 node scripts/lib/guard/check-no-inline-scripts.cli.mjs   # no inline run: blocks
-node --test --experimental-test-coverage \
-  --test-coverage-lines=100 --test-coverage-functions=100 --test-coverage-branches=95 \
-  '--test-coverage-include=actions/**/*.mjs' '--test-coverage-include=scripts/**/*.mjs' \
-  '--test-coverage-exclude=**/*.test.mjs' '--test-coverage-exclude=**/*.cli.mjs' \
-  'actions/**/*.test.mjs' 'scripts/**/*.test.mjs'
+node shadow/src/bin/check-deps.mts                       # shadow's only dep is `yaml`
+node shadow/typecheck.mjs                                # isolated tsc --noEmit
+node --test 'actions/**/*.test.mjs' 'scripts/**/*.test.mjs' 'shadow/test/*.test.mts'
 ```
 
-`.github/workflows/test.yaml` runs both on every push and PR. The **only** sanctioned
-inline `run:` is the pre-checkout bootstrap step in `shared.yaml` (nothing is on disk
-yet to call); the guard whitelists it by its exact step name.
+CI runs these on every push and PR and adds a coverage gate (thresholds in `test.yaml`).
+The **only** sanctioned inline `run:` is the pre-checkout bootstrap in `shared.yaml`
+(nothing is on disk yet to call); the guard whitelists it by its exact step name.
 
 ## Usage
 

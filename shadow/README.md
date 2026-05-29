@@ -42,7 +42,7 @@ Every awkward part here exists to work around something GitHub doesn't offer:
 Everything runs on raw Node 24 — no install:
 
 ```sh
-node --test 'shadow/test/*.test.ts'   # from the repo root; part of the one repo-wide harness
+node --test 'shadow/test/*.test.mts'   # from the repo root; part of the one repo-wide harness
 ```
 
 `src/core/*` is pure (tested); `src/adapters/*` does I/O; `src/bin/*` are entrypoints (read CLI

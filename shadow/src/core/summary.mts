@@ -1,3 +1,6 @@
+import { shadowBranchName } from './shadowBranchName.mts';
+import type { Consumer } from './parseConsumers.mts';
+
 export type ShadowResult = 'passed' | 'failed';
 
 export interface ShadowSummaryInput {
@@ -58,4 +61,28 @@ export function renderShadowLog(input: ShadowSummaryInput): string[] {
   ];
   if (input.prUrl) lines.push(`   shadow PR:  ${input.prUrl}`);
   return lines;
+}
+
+/**
+ * Render the up-front index of all shadow tests for the `prepare` summary: one row per consumer with
+ * its repo and a link to its shadow PR in the runner (which holds the consumer's CI run). Built from
+ * the deterministic branch name, so it's knowable before any consumer dispatches. Pass/fail lives on
+ * the per-consumer checks, not here. Pure.
+ */
+export function renderShadowList(input: { consumers: Consumer[]; workflowsPr: number; runnerRepo: string }): string {
+  const rows = input.consumers.map(({ repo, ref }) => {
+    const branch = shadowBranchName({ prNumber: input.workflowsPr, consumerRepo: repo });
+    const shadowPr = `https://github.com/${input.runnerRepo}/pulls?q=${encodeURIComponent(`is:pr head:${branch}`)}`;
+    return `| ${repoLink(repo)} \`@${ref}\` | ${link('shadow PR + run', shadowPr)} |`;
+  });
+  return [
+    '## 🛰️ Shadow tests',
+    '',
+    '_Pass/fail is on the `Shadow: …` checks above. Each shadow PR runs the consumer’s CI._',
+    '',
+    '| Consumer | Runner |',
+    '| --- | --- |',
+    ...rows,
+    '',
+  ].join('\n');
 }
