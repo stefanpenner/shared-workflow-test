@@ -39,7 +39,7 @@ func CommitURL(repo, sha string) string {
 func repoLink(repo string) string  { return "[`" + repo + "`](https://github.com/" + repo + ")" }
 func link(label, href string) string { return "[" + label + "](" + href + ")" }
 
-func short(ref string) string {
+func ShortSHA(ref string) string {
 	if len(ref) > 7 {
 		return ref[:7]
 	}
@@ -59,7 +59,7 @@ func RenderShadowSummary(in ShadowSummaryInput) string {
 		{"Draft", fmt.Sprintf("%s · %s · %s",
 			repoLink(in.WorkflowsRepo),
 			link(fmt.Sprintf("PR #%d", in.WorkflowsPR), WorkflowsPrURL(in.WorkflowsRepo, in.WorkflowsPR)),
-			link("`"+short(in.WorkflowsRef)+"`", CommitURL(in.WorkflowsRepo, in.WorkflowsRef)))},
+			link("`"+ShortSHA(in.WorkflowsRef)+"`", CommitURL(in.WorkflowsRepo, in.WorkflowsRef)))},
 		{"Runner run", link("logs", in.RunURL)},
 	}
 	if in.PRURL != "" {
@@ -86,7 +86,7 @@ func RenderShadowLog(in ShadowSummaryInput) []string {
 	}
 	lines := []string{
 		fmt.Sprintf("%s Shadow test %s: %s@%s", icon, in.Result, in.ConsumerRepo, in.ConsumerRef),
-		fmt.Sprintf("   vs %s PR #%d (%s)", in.WorkflowsRepo, in.WorkflowsPR, short(in.WorkflowsRef)),
+		fmt.Sprintf("   vs %s PR #%d (%s)", in.WorkflowsRepo, in.WorkflowsPR, ShortSHA(in.WorkflowsRef)),
 		fmt.Sprintf("   runner run: %s", in.RunURL),
 	}
 	if in.PRURL != "" {

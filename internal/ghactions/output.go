@@ -22,11 +22,19 @@ func AppendOutput(path string, outputs []Pair) error {
 	if path == "" {
 		return errors.New("GITHUB_OUTPUT is not set")
 	}
+	return AppendFile(path, RenderOutputs(outputs))
+}
+
+// AppendFile appends raw content to a file — e.g. the $GITHUB_STEP_SUMMARY markdown sink.
+func AppendFile(path, content string) error {
+	if path == "" {
+		return errors.New("file path is empty")
+	}
 	f, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0o644)
 	if err != nil {
 		return err
 	}
 	defer f.Close()
-	_, err = f.WriteString(RenderOutputs(outputs))
+	_, err = f.WriteString(content)
 	return err
 }
