@@ -7,8 +7,9 @@ import { group } from "../../../scripts/lib/log/format.mjs";
 function tryExec(exec, file, args, fallback) {
   try {
     return exec(file, args);
-  } catch {
-    return fallback;
+  } catch (err) {
+    if (err instanceof TypeError) throw err; // a bug in our code, not a failed probe
+    return fallback; // command missing or exited non-zero: expected for a probe
   }
 }
 
@@ -36,7 +37,8 @@ export function treeReport(exec, env = {}) {
 export function gitReport(exec) {
   try {
     exec("git", ["rev-parse", "--git-dir"]);
-  } catch {
+  } catch (err) {
+    if (err instanceof TypeError) throw err; // a bug in our code, not a missing repo
     return group("Git status", "No git repository in working directory");
   }
   const body = [
