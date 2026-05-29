@@ -12,17 +12,20 @@ Follow them exactly.
    **no** inline exception: `shared.yaml` bootstraps via `stefanpenner-cs/clone-action`
    (clones this repo to `../_reusable-workflows`, referenced via `uses: ./../_reusable-workflows/...`),
    so even that step is a plain `uses:`. (The guard still supports an injectable allowlist, but
-   it's empty.)
+   it's empty.) `actions/github-script` is also banned — it embeds an inline JS `script:` body.
 2. **Node + tested; runtime stays dependency-free.** Scripts are ESM `.mjs` on **Node 24**,
    tested with `node:test` + `node:assert/strict`. Action/script **runtime** uses only Node
    built-ins — no third-party runtime deps. The only npm packages are **dev tooling**: the root
    `eslint` + `prettier` (lint this repo's own `.mjs` + YAML) and shadow's isolated `tsc`. CI gates
    coverage (lines/functions/branches) — keep it green.
-3. **Lint + format are enforced.** `eslint` checks correctness over `.mjs` and YAML;
-   `prettier` owns formatting (the two never overlap — `eslint-config-prettier` and `yml/prettier`
-   defer all style to Prettier). Both run in `test.yaml` via `node scripts/lint.mjs`; config lives
-   in `eslint.config.mjs` + `.prettierrc.json`. Run `npm run lint:fix` to auto-resolve. Shadow's
-   `.mts` is linted by `tsc`, not eslint.
+3. **Lint + format are enforced.** `eslint` checks correctness + the **module allowlist** over
+   `.mjs` and `.mts`; `prettier` owns formatting (the two never overlap — `eslint-config-prettier`
+   and `yml/prettier` defer all style to Prettier). Both run in `test.yaml` via
+   `node scripts/lint.mjs`; config lives in `eslint.config.mjs` + `.prettierrc.json`. Run
+   `npm run lint:fix` to auto-resolve. `tsc` still owns `.mts` **types** (`shadow/typecheck.mjs`).
+4. **Module allowlist** (ESLint `no-restricted-imports`): source may import only `node:*` ·
+   relative · `yaml` · `@actions/*`. `@actions/*` is permitted but unused — narrow it later;
+   adopting one means adding it to a `package.json` (`check-deps` allows `yaml` + `@actions/*`).
 
 ## Layout (per action)
 
@@ -48,10 +51,11 @@ Follow them exactly.
 ## Shadow testing (`shadow/`)
 
 All shadow-testing logic lives in `shadow/` in **this** repo (one place to change it). `.mts`
-TypeScript run on **Node 24** (type-stripping at runtime — no transpile step). **`yaml` is the ONE
-runtime dependency**, brought in via npm and enforced by `shadow/src/bin/check-deps.mts` (no other
-deps allowed). Types are checked separately and only by the isolated `tsc` (`node shadow/typecheck.mjs`
-→ `tsc --noEmit`); the runtime never runs tsc. devDeps exist solely for that typecheck.
+TypeScript run on **Node 24** (type-stripping at runtime — no transpile step). Its runtime
+dependency is **`yaml`** (the only one in use); the allowlist also permits `@actions/*` (see the
+module allowlist above), and `shadow/src/bin/check-deps.mts` enforces `deps ⊆ {yaml, @actions/*}`.
+Types are checked separately by the isolated `tsc` (`node shadow/typecheck.mjs → tsc --noEmit`);
+the runtime never runs tsc. devDeps exist solely for that typecheck.
 
 Terminology (used consistently in code, **CLI flags**, and docs):
 
@@ -70,7 +74,8 @@ Conventions specific to `shadow/`:
   and is hard to find — naming the job keeps the check correctly grouped under this workflow.)
 - The result is a markdown **table** written to the job summary (`$GITHUB_STEP_SUMMARY`); logs are
   **plain text with full URLs** (GitHub logs don't render markdown).
-- **`yaml` is the only runtime dependency** (enforced by `check-deps`). Don't add others.
+- **Runtime deps are allowlisted** to `yaml` + `@actions/*` (ESLint import rule + `check-deps`).
+  `yaml` is the only one in use; don't add anything outside the allowlist.
 
 ## Run locally (what CI runs)
 

@@ -1,13 +1,13 @@
-import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
-import { transformWorkflowFile } from '../core/transformWorkflowFile.mts';
-import { referencesWorkflowsRepo, type PatchOptions } from '../core/patchConsumerWorkflow.mts';
+import { readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
+import { transformWorkflowFile } from "../core/transformWorkflowFile.mts";
+import { referencesWorkflowsRepo, type PatchOptions } from "../core/patchConsumerWorkflow.mts";
 
 /** Mirror-transform the consumer's workflow files under `<rootDir>/.github/workflows`. Only files
  * that actually call the workflows are touched — leaving unrelated workflows (e.g. a deploy job)
  * alone so they aren't force-triggered on the shadow PR. Returns the names of files changed. */
 export function patchWorkflowsInDir(rootDir: string, opts: PatchOptions): string[] {
-  const dir = join(rootDir, '.github', 'workflows');
+  const dir = join(rootDir, ".github", "workflows");
   let names: string[];
   try {
     names = readdirSync(dir);
@@ -19,7 +19,7 @@ export function patchWorkflowsInDir(rootDir: string, opts: PatchOptions): string
   for (const name of names) {
     if (!/\.ya?ml$/.test(name)) continue;
     const file = join(dir, name);
-    const before = readFileSync(file, 'utf8');
+    const before = readFileSync(file, "utf8");
     if (!referencesWorkflowsRepo(before, opts.workflowsRepo)) continue;
     const after = transformWorkflowFile(before, opts);
     if (after !== before) {

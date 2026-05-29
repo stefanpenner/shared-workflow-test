@@ -1,4 +1,4 @@
-import { parseDocument, isMap } from 'yaml';
+import { parseDocument, isMap } from "yaml";
 
 export interface PatchOptions {
   /** `owner/repo` of the reusable-workflows workflows whose refs should be repointed. */
@@ -14,12 +14,12 @@ const REUSABLE_USES = /^(?<repo>[^/]+\/[^/]+)\/(?<path>\.github\/workflows\/[^@]
  * workflows to mirror-transform — so unrelated workflows aren't force-triggered on the shadow PR. */
 export function referencesWorkflowsRepo(yaml: string, workflowsRepo: string): boolean {
   const doc = parseDocument(yaml);
-  const jobs = doc.get('jobs');
+  const jobs = doc.get("jobs");
   if (!isMap(jobs)) return false;
   for (const { value: job } of jobs.items) {
     if (!isMap(job)) continue;
-    const uses = job.get('uses');
-    if (typeof uses !== 'string') continue;
+    const uses = job.get("uses");
+    if (typeof uses !== "string") continue;
     if (REUSABLE_USES.exec(uses)?.groups?.repo === workflowsRepo) return true;
   }
   return false;
@@ -33,26 +33,26 @@ export function referencesWorkflowsRepo(yaml: string, workflowsRepo: string): bo
  */
 export function patchConsumerWorkflow(yaml: string, opts: PatchOptions): string {
   const doc = parseDocument(yaml);
-  const jobs = doc.get('jobs');
+  const jobs = doc.get("jobs");
   if (!isMap(jobs)) return doc.toString();
 
   for (const { value: job } of jobs.items) {
     if (!isMap(job)) continue;
 
-    const uses = job.get('uses');
-    if (typeof uses !== 'string') continue;
+    const uses = job.get("uses");
+    if (typeof uses !== "string") continue;
 
     const groups = REUSABLE_USES.exec(uses)?.groups;
     if (!groups || groups.repo !== opts.workflowsRepo || groups.path === undefined) continue;
 
-    const path = groups.path.replace(/\.yml$/, '.yaml');
-    job.set('uses', `${opts.workflowsRepo}/${path}@${opts.workflowsRef}`);
+    const path = groups.path.replace(/\.yml$/, ".yaml");
+    job.set("uses", `${opts.workflowsRepo}/${path}@${opts.workflowsRef}`);
 
-    const withBlock = job.get('with', true);
+    const withBlock = job.get("with", true);
     if (isMap(withBlock)) {
-      withBlock.set('ref', opts.workflowsRef);
+      withBlock.set("ref", opts.workflowsRef);
     } else {
-      job.set('with', doc.createNode({ ref: opts.workflowsRef }));
+      job.set("with", doc.createNode({ ref: opts.workflowsRef }));
     }
   }
 

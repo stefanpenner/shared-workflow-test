@@ -52,3 +52,20 @@ test("inlineErrors does not let an unnamed run inherit an allowlisted name", () 
     "steps:\n  - name: Bootstrap\n    run: mkdir -p x && echo y\n  - run: rm -rf / && echo bad\n";
   assert.equal(inlineErrors(yaml, new Set(["Bootstrap"])).length, 1);
 });
+
+test("inlineErrors flags actions/github-script (inline JS)", () => {
+  const errors = inlineErrors(
+    "steps:\n  - uses: actions/github-script@v7\n    with:\n      script: console.log(1)\n",
+  );
+  assert.equal(errors.length, 1);
+  assert.match(errors[0].message, /github-script/);
+});
+
+test("inlineErrors allows other uses: actions", () => {
+  assert.equal(
+    inlineErrors(
+      "steps:\n  - uses: actions/checkout@v4\n  - uses: ./../_reusable-workflows/actions/setup\n",
+    ).length,
+    0,
+  );
+});

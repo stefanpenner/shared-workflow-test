@@ -10,7 +10,7 @@ export interface ShadowBranchParams {
 export function shadowBranchName({ prNumber, consumerRepo }: ShadowBranchParams): string {
   const slug = consumerRepo
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
   return `shadow/pr-${prNumber}-${slug}`;
 }
