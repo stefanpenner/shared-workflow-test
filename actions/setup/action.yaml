@@ -19,7 +19,4 @@ runs:
   steps:
     - id: run
       shell: bash
-      env:
-        PROJECT_NAME: ${{ inputs.project-name }}
-        NODE_VERSION: ${{ inputs.node-version }}
-      run: "node ${{ github.action_path }}/scripts/setup.cli.mjs"
+      run: "node ${{ github.action_path }}/scripts/setup.cli.mjs --project-name='${{ inputs.project-name }}' --node-version='${{ inputs.node-version }}'"

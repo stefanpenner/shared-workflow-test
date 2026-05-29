@@ -13,7 +13,4 @@ runs:
   using: composite
   steps:
     - shell: bash
-      env:
-        LINT_PATHS: ${{ inputs.paths }}
-        LINT_CONFIG: ${{ inputs.config }}
-      run: "node ${{ github.action_path }}/scripts/lint.cli.mjs"
+      run: "node ${{ github.action_path }}/scripts/lint.cli.mjs --paths='${{ inputs.paths }}' --config='${{ inputs.config }}'"
