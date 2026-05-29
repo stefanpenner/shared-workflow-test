@@ -107,6 +107,28 @@ CLI args, TDD) live in [`CLAUDE.md`](CLAUDE.md).
 - The checked-out actions live **outside the workspace**, so they never show up in the consumer's
   working tree.
 
+## Security
+
+This provider runs Go (built by Bazel on the runner) and, for shadow testing, wields a token with
+cross-repo write (`SHADOW_PAT`). The trust model:
+
+- **Untrusted contributors can't run anything without a writer's approval.** All repos set GitHub
+  Actions' fork-PR policy to **`all_external_contributors`**: no workflow runs on a PR from anyone
+  without write access until a maintainer clicks **Approve and run**. Same-repo branches already
+  require write access, so collaborators (the approvers) run normally.
+- **Secrets never reach untrusted code.** GitHub withholds secrets (incl. `SHADOW_PAT`) from
+  fork-PR workflows even after a run is approved, so the privileged shadow path can't execute from
+  an untrusted fork regardless.
+- **No inline scripts.** Every workflow/action `run:` is a single external invocation
+  (`bazelisk run …` / `go …`), enforced by `//tools/no-inline-scripts`; `actions/github-script` is
+  banned. All real logic is Go that's unit-tested and reviewed — nothing executes from inline YAML.
+- **The bootstrap token is header-only.** `checkout-anywhere` sends any provided token as a masked
+  auth header, never in the remote URL.
+- **Shadow testing is privileged and gated.** It's opt-in via the `shadow-test` label (a trust +
+  cost gate), and the runner's `receiver.yaml` is `workflow_dispatch`-only so only writers / the
+  `SHADOW_PAT` holder can trigger it. The full shadow trust boundary, who may dispatch, and the
+  runtime probe that proves it are documented in **[`shadow/SECURITY.md`](shadow/SECURITY.md)**.
+
 ## See also
 
 - [reusable-workflows-consumer](https://github.com/stefanpenner-cs/reusable-workflows-consumer) — example consumer

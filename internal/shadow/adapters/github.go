@@ -3,6 +3,7 @@ package adapters
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"strconv"
 	"strings"
 	"time"
@@ -165,6 +166,30 @@ func watchCommitRun(cl *github.Client, repo, sha string, findAttempts int, findI
 		time.Sleep(findInterval)
 	}
 	return awaitRun(cl, repo, runID, "consumer CI", runAttempts, runInterval)
+}
+
+// ProbeDispatchStatus POSTs the receiver's workflow_dispatch endpoint with the given Authorization
+// header value ("" sends no Authorization header) and returns the HTTP status code. It is the I/O
+// half of the dispatch-auth security check: it deliberately sends only a credential we expect to be
+// rejected and a body that GitHub rejects before ever reading, so it can NEVER trigger a real run.
+// It never reads the ambient GITHUB_TOKEN, so running it inside Actions is safe.
+func ProbeDispatchStatus(runnerRepo, authHeader string) (int, error) {
+	url := fmt.Sprintf("https://api.github.com/repos/%s/actions/workflows/%s/dispatches", runnerRepo, receiverWorkflow)
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, url, strings.NewReader(`{}`))
+	if err != nil {
+		return 0, err
+	}
+	req.Header.Set("Accept", "application/vnd.github+json")
+	req.Header.Set("Content-Type", "application/json")
+	if authHeader != "" {
+		req.Header.Set("Authorization", authHeader)
+	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return 0, err
+	}
+	defer func() { _ = resp.Body.Close() }()
+	return resp.StatusCode, nil
 }
 
 // ClosePRAndDeleteBranch closes the shadow PR (if any) and deletes its branch. Best-effort: a PR or

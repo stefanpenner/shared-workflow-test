@@ -23,17 +23,14 @@ jobs:
           disk-cache: true
           repository-cache: true
 
-      - name: No inline scripts
-        run: bazelisk run //tools/no-inline-scripts
+      # Hermetic workbench (see CLAUDE.md): no-inline-scripts guard + golangci-lint + yamllint,
+      # all Bazel-pinned. Replaces the golangci-lint/yamllint marketplace actions so CI and
+      # `bazel run //tools:lint` locally run byte-identical tool versions.
+      - name: Lint
+        run: bazelisk run //tools:lint
 
       - name: Build + test
         run: bazelisk test //... --config=ci
-
-      - name: Lint (Go)
-        uses: golangci/golangci-lint-action@v6
-
-      - name: Lint (YAML)
-        uses: ibiqlik/action-yamllint@v3
 
       - name: Coverage gate
         run: go run ./tools/covergate -min 90

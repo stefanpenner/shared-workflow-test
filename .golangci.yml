@@ -1,0 +1,9 @@
+# golangci-lint v2 config. v2 dropped the default exclusions that v1 enabled implicitly, so without
+# this the standard "unchecked Close()/os.Remove() in a defer" cases now error. The std-error-handling
+# preset restores those conventional exclusions; the linter set is golangci-lint's default standard.
+version: "2"
+
+linters:
+  exclusions:
+    presets:
+      - std-error-handling

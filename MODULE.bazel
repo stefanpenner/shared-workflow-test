@@ -7,6 +7,33 @@ bazel_dep(name = "rules_go", version = "0.60.0")
 bazel_dep(name = "gazelle", version = "0.51.0")
 bazel_dep(name = "hermetic_cc_toolchain", version = "4.1.0")
 
+# Dev workbench: hermetic CLI tools (no host installs) + a PATH-mountable tool dir.
+bazel_dep(name = "rules_python", version = "2.0.2")
+bazel_dep(name = "rules_multitool", version = "1.11.1")
+bazel_dep(name = "rules_multirun", version = "0.13.0")
+bazel_dep(name = "bazel_env.bzl", version = "0.7.2")
+
+# yamllint (Python) from a universal, hash-pinned lock (regenerate with `uv pip compile`, see
+# tools/BUILD.bazel). rules_python downloads its own interpreter — no host Python needed.
+python = use_extension("@rules_python//python/extensions:python.bzl", "python")
+python.toolchain(
+    is_default = True,
+    python_version = "3.12",
+)
+
+pip = use_extension("@rules_python//python/extensions:pip.bzl", "pip")
+pip.parse(
+    hub_name = "pip",
+    python_version = "3.12",
+    requirements_lock = "//tools:requirements_lock.txt",
+)
+use_repo(pip, "pip")
+
+# golangci-lint (prebuilt release binary) pinned per-platform in tools/multitool.lock.json.
+multitool = use_extension("@rules_multitool//multitool:extension.bzl", "multitool")
+multitool.hub(lockfile = "//tools:multitool.lock.json")
+use_repo(multitool, "multitool")
+
 # Downloaded Go SDK — no host Go required for the build.
 go_sdk = use_extension("@rules_go//go:extensions.bzl", "go_sdk")
 go_sdk.download(version = "1.25.0")

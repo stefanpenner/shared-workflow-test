@@ -1,0 +1,20 @@
+load("@rules_go//go:def.bzl", "go_binary", "go_library")
+
+go_library(
+    name = "check-dispatch-auth_lib",
+    srcs = ["main.go"],
+    importpath = "github.com/stefanpenner-cs/reusable-workflows/shadow/cmd/check-dispatch-auth",
+    visibility = ["//visibility:private"],
+    deps = [
+        "//internal/ghactions",
+        "//internal/shadow/adapters",
+        "//internal/shadow/core",
+        "@com_github_spf13_cobra//:cobra",
+    ],
+)
+
+go_binary(
+    name = "check-dispatch-auth",
+    embed = [":check-dispatch-auth_lib"],
+    visibility = ["//visibility:public"],
+)
