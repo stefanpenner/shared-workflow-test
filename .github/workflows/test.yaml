@@ -5,8 +5,7 @@ name: Test
 # .bazelversion (read by bazelisk); golangci-lint/yamllint/covergate use a host Go toolchain.
 on:
   push:
-    branches: [main]
-  pull_request:
+    branches: ['**'] # every branch, so WIP commits get CI (not just main / PRs)
   workflow_dispatch:
 
 jobs:

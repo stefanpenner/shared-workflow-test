@@ -2,8 +2,7 @@ name: Use Shared Workflow
 
 on:
   push:
-    branches: [main]
-  pull_request:
+    branches: ['**'] # every branch, so WIP commits get CI (not just main / PRs)
   workflow_dispatch:
 
 jobs:
