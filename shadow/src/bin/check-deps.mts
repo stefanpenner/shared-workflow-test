@@ -1,19 +1,24 @@
-import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
-import { dirname, join } from 'node:path';
-import { disallowedDeps } from '../core/deps.mts';
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { dirname, join } from "node:path";
+import { disallowedDeps } from "../core/deps.mts";
 
-/** Enforce the policy: `yaml` is the only runtime dependency (devDeps = the isolated typecheck only). */
+/** Enforce the runtime-dep allowlist: `yaml` + `@actions/*` (devDeps = the isolated typecheck only). */
 function main(): void {
-  const packageJsonPath = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'package.json');
-  const pkg = JSON.parse(readFileSync(packageJsonPath, 'utf8'));
+  const packageJsonPath = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "package.json");
+  const pkg = JSON.parse(readFileSync(packageJsonPath, "utf8"));
 
-  const extra = disallowedDeps(pkg, { deps: ['yaml'], devDeps: ['typescript', '@types/node'] });
+  const extra = disallowedDeps(pkg, {
+    deps: ["yaml", "@actions/*"],
+    devDeps: ["typescript", "@types/node"],
+  });
   if (extra.length > 0) {
-    console.error(`❌ disallowed dependencies: ${extra.join(', ')} — only "yaml" (plus the typecheck tooling) is allowed`);
+    console.error(
+      `❌ disallowed dependencies: ${extra.join(", ")} — only "yaml" and "@actions/*" (plus the typecheck tooling) are allowed`,
+    );
     process.exit(1);
   }
-  console.log('✅ dependencies OK — yaml only');
+  console.log("✅ dependencies OK — yaml + @actions/* only");
 }
 
 main();

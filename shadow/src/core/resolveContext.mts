@@ -11,12 +11,12 @@ export async function resolveContext(opts: {
   inputPr?: string;
   lookupHeadSha: (pr: string) => Promise<string>;
 }): Promise<{ pr: string; sha: string }> {
-  if (opts.eventName === 'pull_request') {
+  if (opts.eventName === "pull_request") {
     if (!opts.prNumber || !opts.headSha) {
-      throw new Error('pull_request needs --pr-number and --head-sha');
+      throw new Error("pull_request needs --pr-number and --head-sha");
     }
     return { pr: opts.prNumber, sha: opts.headSha };
   }
-  if (!opts.inputPr) throw new Error('workflow_dispatch needs --input-pr');
+  if (!opts.inputPr) throw new Error("workflow_dispatch needs --input-pr");
   return { pr: opts.inputPr, sha: await opts.lookupHeadSha(opts.inputPr) };
 }

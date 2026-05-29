@@ -76,14 +76,16 @@ One harness covers the whole repo — the actions and shared scripts (`.mjs`) pl
 
 ```sh
 node scripts/lib/guard/check-no-inline-scripts.cli.mjs   # no inline run: blocks
-node scripts/lint.mjs                                    # eslint + prettier (.mjs + YAML)
+node scripts/lint.mjs                                    # eslint + prettier (.mjs/.mts/YAML) + import allowlist
 node shadow/src/bin/check-deps.mts                       # shadow's only runtime dep is `yaml`
 node shadow/typecheck.mjs                                # isolated tsc --noEmit
 node --test 'actions/**/*.test.mjs' 'scripts/**/*.test.mjs' 'shadow/test/*.test.mts'
 ```
 
-The only third-party tooling is dev-only — `eslint` + `prettier` lint the repo's own `.mjs`
-and YAML (`npm run lint:fix` auto-resolves); action/script runtime stays dependency-free.
+The only third-party tooling is dev-only — `eslint` + `prettier` lint the repo's own `.mjs`,
+`.mts`, and YAML (`npm run lint:fix` auto-resolves) and enforce a **module allowlist** (imports
+limited to `node:*`, relative, `yaml`, `@actions/*`); the action/script runtime stays
+dependency-free.
 CI runs all of the above on every push and PR and adds a coverage gate (thresholds in `test.yaml`).
 There is **no** inline `run:` exception: `shared.yaml` bootstraps with
 [`stefanpenner-cs/clone-action`](https://github.com/stefanpenner-cs/clone-action), which clones

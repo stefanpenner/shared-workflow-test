@@ -41,6 +41,16 @@ export function inlineErrors(yamlText, allowNames = ALLOW_NAMES) {
     const nameMatch = lines[i].match(/^\s*-?\s*name:\s*(.+?)\s*$/);
     if (nameMatch) lastName = unquote(nameMatch[1]);
 
+    // actions/github-script embeds an inline JS `script:` body — banned like any inline logic.
+    const usesMatch = lines[i].match(/^\s*-?\s*uses:\s*(.+?)\s*$/);
+    if (usesMatch && /^actions\/github-script@/.test(unquote(usesMatch[1]))) {
+      errors.push({
+        line: i + 1,
+        message: "actions/github-script embeds inline JS — write a tested external script instead",
+      });
+      continue;
+    }
+
     const runMatch = lines[i].match(/^\s*-?\s*run:\s*(.*)$/);
     if (!runMatch) continue;
 

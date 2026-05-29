@@ -1,10 +1,15 @@
-import { appendFileSync } from 'node:fs';
-import { requireArgs } from '../core/args.mts';
-import { requireEnv } from '../core/requireEnv.mts';
-import { shadowBranchName } from '../core/shadowBranchName.mts';
-import { renderShadowSummary, renderShadowLog, workflowsPrUrl, type ShadowResult } from '../core/summary.mts';
-import type { ShadowContext } from '../core/dispatch.mts';
-import * as github from '../adapters/github.mts';
+import { appendFileSync } from "node:fs";
+import { requireArgs } from "../core/args.mts";
+import { requireEnv } from "../core/requireEnv.mts";
+import { shadowBranchName } from "../core/shadowBranchName.mts";
+import {
+  renderShadowSummary,
+  renderShadowLog,
+  workflowsPrUrl,
+  type ShadowResult,
+} from "../core/summary.mts";
+import type { ShadowContext } from "../core/dispatch.mts";
+import * as github from "../adapters/github.mts";
 
 /** Append markdown to the job-summary page only (GitHub step logs don't render markdown). */
 function appendSummary(markdown: string): void {
@@ -19,17 +24,31 @@ function appendSummary(markdown: string): void {
  * markdown page) rather than a PR comment.
  */
 async function main(): Promise<void> {
-  const args = requireArgs(['runner-repo', 'workflows-repo', 'workflows-ref', 'workflows-pr', 'consumer-repo', 'consumer-ref']);
-  const runnerRepo = args['runner-repo'];
-  const workflowsRepo = args['workflows-repo'];
-  const workflowsRef = args['workflows-ref'];
-  const workflowsPr = Number(args['workflows-pr']);
-  const consumerRepo = args['consumer-repo'];
-  const consumerRef = args['consumer-ref'];
-  const token = requireEnv('SHADOW_PAT');
+  const args = requireArgs([
+    "runner-repo",
+    "workflows-repo",
+    "workflows-ref",
+    "workflows-pr",
+    "consumer-repo",
+    "consumer-ref",
+  ]);
+  const runnerRepo = args["runner-repo"];
+  const workflowsRepo = args["workflows-repo"];
+  const workflowsRef = args["workflows-ref"];
+  const workflowsPr = Number(args["workflows-pr"]);
+  const consumerRepo = args["consumer-repo"];
+  const consumerRef = args["consumer-ref"];
+  const token = requireEnv("SHADOW_PAT");
 
   const branch = shadowBranchName({ prNumber: workflowsPr, consumerRepo });
-  const ctx: ShadowContext = { workflowsRepo, workflowsRef, consumerRepo, consumerRef, workflowsPr, branch };
+  const ctx: ShadowContext = {
+    workflowsRepo,
+    workflowsRef,
+    consumerRepo,
+    consumerRef,
+    workflowsPr,
+    branch,
+  };
 
   const runId = await github.dispatchReceiver({ runnerRepo, ctx, token });
   const runUrl = `https://github.com/${runnerRepo}/actions/runs/${runId}`;
@@ -41,7 +60,16 @@ async function main(): Promise<void> {
 
   const finish = async (result: ShadowResult): Promise<string | null> => {
     const prUrl = await github.findPrUrl({ repo: runnerRepo, branch, token });
-    const fields = { consumerRepo, consumerRef, workflowsRepo, workflowsRef, workflowsPr, result, runUrl, prUrl };
+    const fields = {
+      consumerRepo,
+      consumerRef,
+      workflowsRepo,
+      workflowsRef,
+      workflowsPr,
+      result,
+      runUrl,
+      prUrl,
+    };
     appendSummary(renderShadowSummary(fields)); // table → this job's summary (the check's artifact)
     for (const line of renderShadowLog(fields)) console.log(line); // plain text → the step log
     return prUrl;
@@ -50,11 +78,13 @@ async function main(): Promise<void> {
   try {
     await github.watchRun({ runnerRepo, runId, token });
   } catch (error) {
-    const prUrl = await finish('failed');
-    console.log(`::error title=Shadow test failed::❌ ${consumerRepo} — open ${prUrl ?? runUrl} to see the failing job`);
+    const prUrl = await finish("failed");
+    console.log(
+      `::error title=Shadow test failed::❌ ${consumerRepo} — open ${prUrl ?? runUrl} to see the failing job`,
+    );
     throw error;
   }
-  await finish('passed');
+  await finish("passed");
 }
 
 try {

@@ -1,4 +1,4 @@
-import { execFile, spawn } from 'node:child_process';
+import { execFile, spawn } from "node:child_process";
 
 export interface ExecOptions {
   cwd?: string;
@@ -15,7 +15,8 @@ export function capture(file: string, args: string[], opts: ExecOptions = {}): P
       args,
       { cwd: opts.cwd, env: opts.env, maxBuffer: 64 * 1024 * 1024 },
       (error, stdout, stderr) => {
-        if (error) reject(new Error(`\`${file} ${args.join(' ')}\` failed: ${stderr || error.message}`));
+        if (error)
+          reject(new Error(`\`${file} ${args.join(" ")}\` failed: ${stderr || error.message}`));
         else resolve(stdout.toString());
       },
     );
@@ -26,10 +27,12 @@ export function capture(file: string, args: string[], opts: ExecOptions = {}): P
 /** Run a command, streaming its output live (stdio inherited). Rejects on a non-zero exit. */
 export function run(file: string, args: string[], opts: ExecOptions = {}): Promise<void> {
   return new Promise((resolve, reject) => {
-    const child = spawn(file, args, { cwd: opts.cwd, env: opts.env, stdio: 'inherit' });
-    child.on('error', reject);
-    child.on('close', (code) =>
-      code === 0 ? resolve() : reject(new Error(`\`${file} ${args.join(' ')}\` exited with ${code}`)),
+    const child = spawn(file, args, { cwd: opts.cwd, env: opts.env, stdio: "inherit" });
+    child.on("error", reject);
+    child.on("close", (code) =>
+      code === 0
+        ? resolve()
+        : reject(new Error(`\`${file} ${args.join(" ")}\` exited with ${code}`)),
     );
   });
 }

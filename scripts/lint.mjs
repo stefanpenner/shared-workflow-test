@@ -14,4 +14,4 @@ function step(command, args) {
 
 step("npm", ["ci", "--no-fund", "--no-audit"]);
 step("npx", ["--no-install", "eslint", "."]);
-step("npx", ["--no-install", "prettier", "--check", "**/*.{mjs,yaml,yml}"]);
+step("npx", ["--no-install", "prettier", "--check", "**/*.{mjs,mts,yaml,yml}"]);
