@@ -5,4 +5,4 @@
 set -euo pipefail
 
 npm ci
-npx tsx src/bin/dispatch-and-watch.ts
+node src/bin/dispatch-and-watch.ts

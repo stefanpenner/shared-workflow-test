@@ -4,4 +4,4 @@
 set -euo pipefail
 
 npm ci
-npx tsx src/bin/cleanup.ts
+node src/bin/cleanup.ts

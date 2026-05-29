@@ -54,7 +54,7 @@ jobs:
           path: .shadow-harness
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
           cache: npm
           cache-dependency-path: .shadow-harness/package-lock.json
       - name: List consumers
@@ -83,7 +83,7 @@ jobs:
           path: .provider
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
           cache: npm
       - name: Dispatch and watch
         run: bash .provider/scripts/shadow/dispatch.sh

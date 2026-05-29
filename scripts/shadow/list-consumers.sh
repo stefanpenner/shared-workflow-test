@@ -4,4 +4,4 @@
 set -euo pipefail
 
 npm ci
-npx tsx src/bin/list-consumers.ts
+node src/bin/list-consumers.ts
