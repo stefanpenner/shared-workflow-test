@@ -15,7 +15,10 @@ test("kv handles an empty map", () => {
 });
 
 test("section combines a heading with aligned rows", () => {
-  assert.equal(section("Lint", { paths: ".", config: ".eslintrc" }), "▸ Lint\n  paths   .\n  config  .eslintrc");
+  assert.equal(
+    section("Lint", { paths: ".", config: ".eslintrc" }),
+    "▸ Lint\n  paths   .\n  config  .eslintrc",
+  );
 });
 
 test("group wraps a body in a collapsible GHA block", () => {

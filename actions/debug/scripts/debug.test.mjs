@@ -62,7 +62,10 @@ test("gitReport groups status and diff sections inside a repo", () => {
 
 test("gitReport reports no repository when git rev-parse fails", () => {
   const exec = fakeExec({}, ["git rev-parse"]);
-  assert.equal(gitReport(exec), "::group::Git status\nNo git repository in working directory\n::endgroup::");
+  assert.equal(
+    gitReport(exec),
+    "::group::Git status\nNo git repository in working directory\n::endgroup::",
+  );
 });
 
 test("treeReport rethrows programming errors instead of swallowing them", () => {

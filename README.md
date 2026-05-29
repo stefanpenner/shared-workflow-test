@@ -72,16 +72,19 @@ All executable logic lives in **external scripts**, never in inline `run:` block
 
 One harness covers the whole repo — the actions and shared scripts (`.mjs`) plus
 [`shadow/`](shadow/) (`.mts`, run natively on Node 24). Reproduce CI
-(`.github/workflows/test.yaml`) locally, no install needed:
+(`.github/workflows/test.yaml`) locally:
 
 ```sh
 node scripts/lib/guard/check-no-inline-scripts.cli.mjs   # no inline run: blocks
-node shadow/src/bin/check-deps.mts                       # shadow's only dep is `yaml`
+node scripts/lint.mjs                                    # eslint + prettier (.mjs + YAML)
+node shadow/src/bin/check-deps.mts                       # shadow's only runtime dep is `yaml`
 node shadow/typecheck.mjs                                # isolated tsc --noEmit
 node --test 'actions/**/*.test.mjs' 'scripts/**/*.test.mjs' 'shadow/test/*.test.mts'
 ```
 
-CI runs these on every push and PR and adds a coverage gate (thresholds in `test.yaml`).
+The only third-party tooling is dev-only — `eslint` + `prettier` lint the repo's own `.mjs`
+and YAML (`npm run lint:fix` auto-resolves); action/script runtime stays dependency-free.
+CI runs all of the above on every push and PR and adds a coverage gate (thresholds in `test.yaml`).
 There is **no** inline `run:` exception: `shared.yaml` bootstraps with
 [`stefanpenner-cs/clone-action`](https://github.com/stefanpenner-cs/clone-action), which clones
 this repo to `../_reusable-workflows` (outside the workspace, so nothing leaks into the consumer's

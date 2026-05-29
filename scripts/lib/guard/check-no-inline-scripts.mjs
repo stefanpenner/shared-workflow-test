@@ -51,12 +51,18 @@ export function inlineErrors(yamlText, allowNames = ALLOW_NAMES) {
 
     const raw = runMatch[1].trim();
     if (raw === "" || /^[|>][+-]?\d*$/.test(raw)) {
-      errors.push({ line: i + 1, message: "block scalar run: — move logic into an external script" });
+      errors.push({
+        line: i + 1,
+        message: "block scalar run: — move logic into an external script",
+      });
       continue;
     }
     const value = unquote(raw);
     if (!isSingleInvocation(value)) {
-      errors.push({ line: i + 1, message: `inline logic in run: "${value}" — call an external script instead` });
+      errors.push({
+        line: i + 1,
+        message: `inline logic in run: "${value}" — call an external script instead`,
+      });
     }
   }
   return errors;

@@ -52,7 +52,7 @@ jobs:
   # workflow. (A Checks-API check run created from here can't choose its check-suite, so it ends up
   # mis-grouped under another workflow — naming the job avoids that.)
   shadow:
-    name: 'Shadow: ${{ matrix.consumer.repo }}'
+    name: "Shadow: ${{ matrix.consumer.repo }}"
     needs: prepare
     runs-on: ubuntu-latest
     strategy:

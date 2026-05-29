@@ -1,7 +1,8 @@
 name: Test
 
-# One harness for the whole repo: the no-inline guard + a single `node --test` run covering the
-# actions (.mjs), shared scripts (.mjs), and shadow/ (.mts, run natively on Node 24). No npm.
+# One harness for the whole repo: static gates (no-inline guard, eslint + prettier, dep policy,
+# isolated tsc) plus a single `node --test` run covering the actions (.mjs), shared scripts (.mjs),
+# and shadow/ (.mts, run natively on Node 24). npm appears only in the lint/typecheck drivers.
 on:
   push:
     branches: [main]
@@ -19,6 +20,10 @@ jobs:
 
       - name: No inline scripts
         run: node scripts/lib/guard/check-no-inline-scripts.cli.mjs
+
+      # Lint the repo's own .mjs + YAML. Installs root dev tooling (eslint + prettier) and runs both.
+      - name: Lint (eslint + prettier)
+        run: node scripts/lint.mjs
 
       - name: Dependency policy (yaml only)
         run: node shadow/src/bin/check-deps.mts

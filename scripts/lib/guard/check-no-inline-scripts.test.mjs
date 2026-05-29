@@ -35,7 +35,10 @@ test("inlineErrors flags inline one-liners with shell operators", () => {
 });
 
 test("inlineErrors allows a single external invocation", () => {
-  assert.equal(inlineErrors('steps:\n  - run: "node ${{ github.action_path }}/scripts/run.cli.mjs"\n').length, 0);
+  assert.equal(
+    inlineErrors('steps:\n  - run: "node ${{ github.action_path }}/scripts/run.cli.mjs"\n').length,
+    0,
+  );
 });
 
 test("inlineErrors honours an allowlisted step name (mechanism; default allowlist is empty)", () => {
@@ -45,6 +48,7 @@ test("inlineErrors honours an allowlisted step name (mechanism; default allowlis
 });
 
 test("inlineErrors does not let an unnamed run inherit an allowlisted name", () => {
-  const yaml = "steps:\n  - name: Bootstrap\n    run: mkdir -p x && echo y\n  - run: rm -rf / && echo bad\n";
+  const yaml =
+    "steps:\n  - name: Bootstrap\n    run: mkdir -p x && echo y\n  - run: rm -rf / && echo bad\n";
   assert.equal(inlineErrors(yaml, new Set(["Bootstrap"])).length, 1);
 });

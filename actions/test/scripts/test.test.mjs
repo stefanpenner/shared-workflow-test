@@ -3,7 +3,10 @@ import assert from "node:assert/strict";
 import { report } from "./test.mjs";
 
 test("report shows the suite and coverage state", () => {
-  assert.equal(report("integration", "true"), "▸ Test\n  suite     integration\n  coverage  enabled");
+  assert.equal(
+    report("integration", "true"),
+    "▸ Test\n  suite     integration\n  coverage  enabled",
+  );
 });
 
 test("report treats coverage=false as disabled", () => {

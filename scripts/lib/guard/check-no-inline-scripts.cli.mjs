@@ -30,7 +30,8 @@ function discover() {
     if (isFile(candidate)) files.push(candidate);
   }
   for (const name of listDir(".github/workflows")) {
-    if (name.endsWith(".yaml") || name.endsWith(".yml")) files.push(join(".github/workflows", name));
+    if (name.endsWith(".yaml") || name.endsWith(".yml"))
+      files.push(join(".github/workflows", name));
   }
   return files;
 }

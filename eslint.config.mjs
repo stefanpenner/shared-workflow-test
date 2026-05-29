@@ -12,12 +12,7 @@ import prettier from "eslint-config-prettier";
 
 export default [
   {
-    ignores: [
-      "**/node_modules/**",
-      "**/coverage/**",
-      "shadow/dist/**",
-      "shadow/mirror/**",
-    ],
+    ignores: ["**/node_modules/**", "**/coverage/**", "shadow/dist/**", "shadow/mirror/**"],
   },
 
   // JavaScript: every executable script in the repo is ESM running on Node 24.
@@ -40,6 +35,14 @@ export default [
   // YAML: workflows and action definitions.
   ...yml.configs["flat/standard"],
   ...yml.configs["flat/prettier"],
+  {
+    files: ["**/*.{yaml,yml}"],
+    rules: {
+      // GitHub Actions event triggers (`pull_request:`, `workflow_dispatch:`) are
+      // intentionally empty mappings — that's the idiom, not a mistake.
+      "yml/no-empty-mapping-value": "off",
+    },
+  },
 
   // Last word: turn off any remaining JS formatting rules so Prettier is authoritative.
   prettier,

@@ -13,9 +13,16 @@ Follow them exactly.
    (clones this repo to `../_reusable-workflows`, referenced via `uses: ./../_reusable-workflows/...`),
    so even that step is a plain `uses:`. (The guard still supports an injectable allowlist, but
    it's empty.)
-2. **Everything is Node + tested, zero `node_modules`.** Scripts are ESM `.mjs`, run on
-   **Node 24**, tested with `node:test` + `node:assert/strict`. No third-party deps.
-   CI gates coverage (lines/functions/branches) — keep it green.
+2. **Node + tested; runtime stays dependency-free.** Scripts are ESM `.mjs` on **Node 24**,
+   tested with `node:test` + `node:assert/strict`. Action/script **runtime** uses only Node
+   built-ins — no third-party runtime deps. The only npm packages are **dev tooling**: the root
+   `eslint` + `prettier` (lint this repo's own `.mjs` + YAML) and shadow's isolated `tsc`. CI gates
+   coverage (lines/functions/branches) — keep it green.
+3. **Lint + format are enforced.** `eslint` checks correctness over `.mjs` and YAML;
+   `prettier` owns formatting (the two never overlap — `eslint-config-prettier` and `yml/prettier`
+   defer all style to Prettier). Both run in `test.yaml` via `node scripts/lint.mjs`; config lives
+   in `eslint.config.mjs` + `.prettierrc.json`. Run `npm run lint:fix` to auto-resolve. Shadow's
+   `.mts` is linted by `tsc`, not eslint.
 
 ## Layout (per action)
 
@@ -68,10 +75,15 @@ Conventions specific to `shadow/`:
 ## Run locally (what CI runs)
 
 ```sh
-node scripts/lib/guard/check-no-inline-scripts.cli.mjs
+node scripts/lib/guard/check-no-inline-scripts.cli.mjs   # no inline run: blocks
+node scripts/lint.mjs                                     # eslint + prettier (.mjs + YAML)
+node shadow/src/bin/check-deps.mts                        # shadow: yaml-only runtime dep
+node shadow/typecheck.mjs                                 # isolated tsc --noEmit
 node --test --experimental-test-coverage \
-  --test-coverage-lines=100 --test-coverage-functions=100 --test-coverage-branches=95 \
+  --test-coverage-lines=95 --test-coverage-functions=100 --test-coverage-branches=90 \
   '--test-coverage-include=actions/**/*.mjs' '--test-coverage-include=scripts/**/*.mjs' \
-  '--test-coverage-exclude=**/*.test.mjs' '--test-coverage-exclude=**/*.cli.mjs' \
-  'actions/**/*.test.mjs' 'scripts/**/*.test.mjs'
+  '--test-coverage-include=shadow/src/**/*.mts' '--test-coverage-exclude=**/*.test.*' \
+  '--test-coverage-exclude=**/*.cli.mjs' '--test-coverage-exclude=shadow/src/bin/**' \
+  '--test-coverage-exclude=shadow/src/adapters/**' \
+  'actions/**/*.test.mjs' 'scripts/**/*.test.mjs' 'shadow/test/*.test.mts'
 ```
