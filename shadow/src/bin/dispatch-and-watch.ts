@@ -1,4 +1,5 @@
 import { appendFileSync } from 'node:fs';
+import { requireArgs } from '../core/args.ts';
 import { requireEnv } from '../core/requireEnv.ts';
 import { shadowBranchName } from '../core/shadowBranchName.ts';
 import { renderShadowSummary, type ShadowResult } from '../core/summary.ts';
@@ -19,12 +20,13 @@ function writeJobSummary(markdown: string): void {
  * markdown page) rather than a PR comment.
  */
 async function main(): Promise<void> {
-  const runnerRepo = requireEnv('RUNNER_REPO');
-  const workflowsRepo = requireEnv('WORKFLOWS_REPO');
-  const workflowsRef = requireEnv('WORKFLOWS_REF');
-  const workflowsPr = Number(requireEnv('WORKFLOWS_PR'));
-  const consumerRepo = requireEnv('CONSUMER_REPO');
-  const consumerRef = requireEnv('CONSUMER_REF');
+  const args = requireArgs(['runner-repo', 'workflows-repo', 'workflows-ref', 'workflows-pr', 'consumer-repo', 'consumer-ref']);
+  const runnerRepo = args['runner-repo'];
+  const workflowsRepo = args['workflows-repo'];
+  const workflowsRef = args['workflows-ref'];
+  const workflowsPr = Number(args['workflows-pr']);
+  const consumerRepo = args['consumer-repo'];
+  const consumerRef = args['consumer-ref'];
   const token = requireEnv('SHADOW_PAT');
 
   const branch = shadowBranchName({ prNumber: workflowsPr, consumerRepo });

@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { parse } from 'yaml';
+import _yaml from '../vendor/yaml/index.js';
+const { parse } = _yaml;
 import { patchWorkflowsInDir } from '../src/adapters/workflows.ts';
 
 const SHA = '0123456789abcdef0123456789abcdef01234567';

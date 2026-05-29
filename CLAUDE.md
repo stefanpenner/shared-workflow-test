@@ -34,22 +34,27 @@ Follow them exactly.
 
 ## Shadow testing (`shadow/`)
 
-All shadow-testing logic lives in `shadow/` in **this** repo (one place to change it). It's a
-small TypeScript project run on raw Node 24; it is the **one npm+`node_modules` island** (it
-depends on `yaml` for comment-preserving workflow edits), kept entirely inside `shadow/` so the
-actions above stay zero-dep. Its CI (typecheck + lint + `node:test`) runs via `bash shadow/ci.sh`.
+All shadow-testing logic lives in `shadow/` in **this** repo (one place to change it). TypeScript on
+raw **Node 24** (type-stripping), **no npm / no `node_modules`**: its one dependency, `yaml`, is
+**vendored** at `shadow/vendor/yaml/` (imported by relative path; it carries its own
+`type: commonjs`). Everything — bins, tests, the runner's `mirror-and-test` — runs with `node`
+directly. It's covered by the repo's single test harness (see below), not a separate pipeline.
 
-Terminology (used consistently in code, env vars, and docs):
+Terminology (used consistently in code, **CLI flags**, and docs):
 
-- **workflows** = this repo (`reusable-workflows`) — its PRs are what we test (`WORKFLOWS_REPO`/`_REF`/`_PR`).
-- **runner** = `reusable-workflows-shadow-testing` — the venue where shadow PRs run a consumer's CI; it's a thin `receiver.yaml` shim that checks out this repo and runs `shadow/`.
+- **workflows** = this repo (`reusable-workflows`) — its PRs are what we test (`--workflows-repo/-ref/-pr`).
+- **runner** = `reusable-workflows-shadow-testing` — the venue where shadow PRs run a consumer's CI; a thin `receiver.yaml` shim that checks out this repo and runs `shadow/`.
 - **consumer** = a downstream repo (from `.github/shadow-consumers.json`) we mirror to verify the draft doesn't break it.
 
-Provider-invoked bins (`list-consumers`, `dispatch-and-watch`, `cleanup`) are dependency-free and
-run on raw Node 24; only `mirror-and-test` (in the runner's receiver) uses `yaml`. Don't pull a dep
-into a dep-free bin's import graph. Result is reported as a **job summary** on the shadow check (no
-PR comments); the dispatch job watches **silently** — no per-step polling logs, just links + a clear
-pass/fail (failures emit a red `::error::` annotation linking to where to look).
+Conventions specific to `shadow/`:
+
+- **Config comes from CLI flags, not env** — bins read `--workflows-repo` etc. via `requireArgs`
+  (use `--flag=${{ ... }}` in YAML so empty values don't break parsing). Only **secrets**
+  (`SHADOW_PAT`) and GHA sinks (`GITHUB_OUTPUT`) stay in env.
+- Result is a **job summary** on the shadow check (no PR comments); the dispatch job watches
+  **silently** (no poll logs) — just links + a clear pass/fail, with a red `::error::` annotation
+  linking to the failure.
+- Don't add a runtime dependency. If you must, vendor it like `yaml`.
 
 ## Run locally (what CI runs)
 

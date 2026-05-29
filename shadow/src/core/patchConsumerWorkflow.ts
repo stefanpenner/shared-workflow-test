@@ -1,4 +1,5 @@
-import { parseDocument, isMap } from 'yaml';
+import _yaml from '../../vendor/yaml/index.js';
+const { parseDocument, isMap } = _yaml;
 
 export interface PatchOptions {
   /** `owner/repo` of the reusable-workflows workflows whose refs should be repointed. */

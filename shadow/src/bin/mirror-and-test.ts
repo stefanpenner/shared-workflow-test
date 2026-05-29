@@ -1,6 +1,7 @@
 import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { requireArgs } from '../core/args.ts';
 import { requireEnv } from '../core/requireEnv.ts';
 import { mirrorTree } from '../core/mirrorTree.ts';
 import { patchWorkflowsInDir } from '../adapters/workflows.ts';
@@ -13,14 +14,23 @@ import * as github from '../adapters/github.ts';
  * on that PR's checks — so this run's exit status IS the shadow-test result the workflows watches.
  */
 async function main(): Promise<void> {
-  const workflowsRepo = requireEnv('WORKFLOWS_REPO');
-  const workflowsRef = requireEnv('WORKFLOWS_REF');
-  const consumerRepo = requireEnv('CONSUMER_REPO');
-  const consumerRef = requireEnv('CONSUMER_REF');
-  const workflowsPr = requireEnv('WORKFLOWS_PR');
-  const branch = requireEnv('BRANCH');
+  const args = requireArgs([
+    'workflows-repo',
+    'workflows-ref',
+    'consumer-repo',
+    'consumer-ref',
+    'workflows-pr',
+    'branch',
+    'runner-repo',
+  ]);
+  const workflowsRepo = args['workflows-repo'];
+  const workflowsRef = args['workflows-ref'];
+  const consumerRepo = args['consumer-repo'];
+  const consumerRef = args['consumer-ref'];
+  const workflowsPr = args['workflows-pr'];
+  const branch = args['branch'];
+  const runnerRepo = args['runner-repo'];
   const token = requireEnv('SHADOW_PAT');
-  const runnerRepo = requireEnv('GITHUB_REPOSITORY');
 
   const work = mkdtempSync(join(tmpdir(), 'shadow-'));
   const mirrorDir = join(work, 'consumer');

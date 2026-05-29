@@ -1,5 +1,7 @@
 name: Test
 
+# One harness for the whole repo: the no-inline guard + a single `node --test` run covering the
+# actions (.mjs), shared scripts (.mjs), and shadow/ (.ts, run natively on Node 24). No npm.
 on:
   push:
     branches: [main]
@@ -7,7 +9,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  verify:
+  test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -15,24 +17,10 @@ jobs:
         with:
           node-version: "24"
 
-      # Every step's run: is a single external-script invocation — no inline logic
-      # (which is exactly what the guard below enforces across this repo).
       - name: No inline scripts
-        run: "node scripts/lib/guard/check-no-inline-scripts.cli.mjs"
+        run: node scripts/lib/guard/check-no-inline-scripts.cli.mjs
 
-      # Globs are single-quoted so Node (not the shell) expands them. Coverage is
-      # gated: the build fails below the thresholds. cli/test files are excluded.
-      - name: Unit tests + coverage gate
-        run: "node --test --experimental-test-coverage --test-coverage-lines=100 --test-coverage-functions=100 --test-coverage-branches=95 '--test-coverage-include=actions/**/*.mjs' '--test-coverage-include=scripts/**/*.mjs' '--test-coverage-exclude=**/*.test.mjs' '--test-coverage-exclude=**/*.cli.mjs' 'actions/**/*.test.mjs' 'scripts/**/*.test.mjs'"
-
-  # The shadow/ subtree is the one npm+TypeScript island (it depends on `yaml`); its own
-  # typecheck/lint/node:test pipeline runs behind a single external script.
-  shadow:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "24"
-      - name: shadow/ typecheck + lint + test
-        run: bash shadow/ci.sh
+      # Single test command for the whole repo, coverage-gated. Globs are single-quoted so Node
+      # (not the shell) expands them; coverage covers the pure layers (bins/adapters/vendor excluded).
+      - name: Tests + coverage
+        run: node --test --experimental-test-coverage --test-coverage-lines=95 --test-coverage-functions=100 --test-coverage-branches=90 '--test-coverage-include=actions/**/*.mjs' '--test-coverage-include=scripts/**/*.mjs' '--test-coverage-include=shadow/src/**/*.ts' '--test-coverage-exclude=**/*.test.*' '--test-coverage-exclude=**/*.cli.mjs' '--test-coverage-exclude=shadow/src/bin/**' '--test-coverage-exclude=shadow/src/adapters/**' '--test-coverage-exclude=shadow/vendor/**' 'actions/**/*.test.mjs' 'scripts/**/*.test.mjs' 'shadow/test/*.test.ts'

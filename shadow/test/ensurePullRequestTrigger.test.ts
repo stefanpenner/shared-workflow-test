@@ -1,6 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { parse } from 'yaml';
+import _yaml from '../vendor/yaml/index.js';
+const { parse } = _yaml;
 import { ensurePullRequestTrigger } from '../src/core/ensurePullRequestTrigger.ts';
 
 describe('ensurePullRequestTrigger', () => {

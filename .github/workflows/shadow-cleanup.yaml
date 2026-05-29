@@ -22,8 +22,5 @@ jobs:
           node-version: 24
       - name: Tear down shadow PRs + branches
         env:
-          RUNNER_REPO: ${{ env.RUNNER_REPO }}
-          WORKFLOWS_PR: ${{ github.event.pull_request.number }}
-          CONSUMERS_FILE: ${{ github.workspace }}/.github/shadow-consumers.json
           SHADOW_PAT: ${{ secrets.SHADOW_PAT }}
-        run: node shadow/src/bin/cleanup.ts
+        run: node shadow/src/bin/cleanup.ts --runner-repo=${{ env.RUNNER_REPO }} --workflows-pr=${{ github.event.pull_request.number }} --consumers-file=${{ github.workspace }}/.github/shadow-consumers.json

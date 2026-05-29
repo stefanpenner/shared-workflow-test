@@ -1,6 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { parse } from 'yaml';
+import _yaml from '../vendor/yaml/index.js';
+const { parse } = _yaml;
 import { patchConsumerWorkflow } from '../src/core/patchConsumerWorkflow.ts';
 
 const WORKFLOWS = 'stefanpenner-cs/reusable-workflows';

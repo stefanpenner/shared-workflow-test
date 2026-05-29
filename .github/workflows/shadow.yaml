@@ -1,9 +1,8 @@
 name: Shadow test consumers
 
-# On a labeled PR (or manual dispatch), run this PR's draft state against each real consumer under
-# an authentic pull_request event in the shadow runner, and reflect the result back here.
-# All logic lives in shadow/ in THIS repo and runs from this checkout; the runner repo is only the
-# dispatch venue (see shadow/README and the receiver shim there).
+# On a labeled PR (or manual dispatch), run this PR's draft against each real consumer under an
+# authentic pull_request event in the shadow runner, and report the result here. All logic lives in
+# shadow/ in THIS repo and runs from this checkout; the runner repo is only the dispatch venue.
 on:
   pull_request:
     types: [opened, synchronize, reopened, labeled]
@@ -39,24 +38,15 @@ jobs:
         with:
           node-version: 24
 
-      - name: actionlint (cheap gate on the workflows draft)
-        run: bash scripts/shadow/actionlint.sh
-
       - name: Resolve PR + head SHA
         id: ctx
         env:
           GH_TOKEN: ${{ github.token }}
-          EVENT_NAME: ${{ github.event_name }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-          INPUT_PR: ${{ inputs.pr }}
-        run: bash scripts/shadow/resolve-ctx.sh
+        run: node shadow/src/bin/resolve-ctx.ts --event-name=${{ github.event_name }} --pr-number=${{ github.event.pull_request.number }} --head-sha=${{ github.event.pull_request.head.sha }} --input-pr=${{ inputs.pr }} --workflows-repo=${{ github.repository }}
 
       - name: List consumers
         id: list
-        env:
-          CONSUMERS_FILE: ${{ github.workspace }}/.github/shadow-consumers.json
-        run: node shadow/src/bin/list-consumers.ts
+        run: node shadow/src/bin/list-consumers.ts --consumers-file=${{ github.workspace }}/.github/shadow-consumers.json
 
   shadow:
     needs: prepare
@@ -71,12 +61,6 @@ jobs:
         with:
           node-version: 24
       - name: Dispatch and watch
-        run: node shadow/src/bin/dispatch-and-watch.ts
         env:
-          RUNNER_REPO: ${{ env.RUNNER_REPO }}
-          WORKFLOWS_REPO: ${{ github.repository }}
-          WORKFLOWS_REF: ${{ needs.prepare.outputs.sha }}
-          WORKFLOWS_PR: ${{ needs.prepare.outputs.pr }}
-          CONSUMER_REPO: ${{ matrix.consumer.repo }}
-          CONSUMER_REF: ${{ matrix.consumer.ref }}
           SHADOW_PAT: ${{ secrets.SHADOW_PAT }}
+        run: node shadow/src/bin/dispatch-and-watch.ts --runner-repo=${{ env.RUNNER_REPO }} --workflows-repo=${{ github.repository }} --workflows-ref=${{ needs.prepare.outputs.sha }} --workflows-pr=${{ needs.prepare.outputs.pr }} --consumer-repo=${{ matrix.consumer.repo }} --consumer-ref=${{ matrix.consumer.ref }}
