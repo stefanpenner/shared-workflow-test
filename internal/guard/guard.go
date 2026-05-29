@@ -18,8 +18,8 @@ var (
 	exprRe   = regexp.MustCompile(`\$\{\{[^}]*\}\}`)
 	shellOps = regexp.MustCompile("&&|\\|\\||[;|`<>]|\\$\\(")
 	evalRe   = regexp.MustCompile(`^(node|deno|bun)\s+(-e|--eval|-p|--print)\b`)
-	// Accepted interpreters: bazelisk/bazel (the Go runtime model), plus node/bash/sh for tooling.
-	interpRe = regexp.MustCompile(`^(node|bash|sh|bazelisk|bazel)\s+\S`)
+	// Accepted interpreters: bazelisk/bazel (the Go runtime model) + go (CI tooling), plus bash/sh.
+	interpRe = regexp.MustCompile(`^(go|bash|sh|bazelisk|bazel)\s+\S`)
 	bareRe   = regexp.MustCompile(`^\S+\.(mjs|cjs|js|sh)$`)
 	nameRe   = regexp.MustCompile(`^\s*-?\s*name:\s*(.+?)\s*$`)
 	usesRe   = regexp.MustCompile(`^\s*-?\s*uses:\s*(.+?)\s*$`)

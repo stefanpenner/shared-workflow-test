@@ -1,0 +1,15 @@
+extends: default
+
+# GitHub Actions YAML idioms: long single-invocation `run:` lines, `on:` as a key, no `---`.
+rules:
+  line-length: disable
+  document-start: disable
+  truthy:
+    check-keys: false
+  comments:
+    min-spaces-from-content: 1
+  comments-indentation: disable
+
+ignore: |
+  bazel-*
+  node_modules

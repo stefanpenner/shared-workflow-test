@@ -13,4 +13,5 @@ runs:
   using: composite
   steps:
     - shell: bash
-      run: "node ${{ github.action_path }}/scripts/test.cli.mjs --suite='${{ inputs.suite }}' --coverage='${{ inputs.coverage }}'"
+      working-directory: ${{ github.action_path }}
+      run: "bazelisk run //actions/test -- --suite='${{ inputs.suite }}' --coverage='${{ inputs.coverage }}'"

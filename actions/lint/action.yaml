@@ -13,4 +13,5 @@ runs:
   using: composite
   steps:
     - shell: bash
-      run: "node ${{ github.action_path }}/scripts/lint.cli.mjs --paths='${{ inputs.paths }}' --config='${{ inputs.config }}'"
+      working-directory: ${{ github.action_path }}
+      run: "bazelisk run //actions/lint -- --paths='${{ inputs.paths }}' --config='${{ inputs.config }}'"

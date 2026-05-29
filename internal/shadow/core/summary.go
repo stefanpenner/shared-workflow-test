@@ -36,7 +36,7 @@ func CommitURL(repo, sha string) string {
 	return fmt.Sprintf("https://github.com/%s/commit/%s", repo, sha)
 }
 
-func repoLink(repo string) string  { return "[`" + repo + "`](https://github.com/" + repo + ")" }
+func repoLink(repo string) string    { return "[`" + repo + "`](https://github.com/" + repo + ")" }
 func link(label, href string) string { return "[" + label + "](" + href + ")" }
 
 func ShortSHA(ref string) string {

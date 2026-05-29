@@ -7,8 +7,8 @@ import (
 )
 
 func TestIsSingleInvocationAcceptsInterpreterAndBareForms(t *testing.T) {
-	assert.True(t, IsSingleInvocation("node ${{ github.action_path }}/scripts/setup.cli.mjs"))
-	assert.True(t, IsSingleInvocation(`node --test --experimental-test-coverage "actions/**/*.test.mjs"`))
+	assert.True(t, IsSingleInvocation("go run ./tools/covergate -min 90"))
+	assert.True(t, IsSingleInvocation("go test ./internal/..."))
 	assert.True(t, IsSingleInvocation("bash scripts/ci/run.sh"))
 	assert.True(t, IsSingleInvocation("scripts/ci/run.sh"))
 }
@@ -51,7 +51,7 @@ func TestInlineErrorsFlagsShellOneLiners(t *testing.T) {
 }
 
 func TestInlineErrorsAllowsSingleExternalInvocation(t *testing.T) {
-	assert.Empty(t, InlineErrors("steps:\n  - run: \"node ${{ github.action_path }}/scripts/run.cli.mjs\"\n", AllowNames))
+	assert.Empty(t, InlineErrors("steps:\n  - run: \"bazelisk run //tools/guard\"\n", AllowNames))
 }
 
 func TestInlineErrorsHonoursAllowlistedName(t *testing.T) {

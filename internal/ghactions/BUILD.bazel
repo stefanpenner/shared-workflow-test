@@ -16,7 +16,11 @@ go_test(
     srcs = [
         "args_test.go",
         "format_test.go",
+        "output_test.go",
     ],
     embed = [":ghactions"],
-    deps = ["@com_github_stretchr_testify//assert"],
+    deps = [
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+    ],
 )
