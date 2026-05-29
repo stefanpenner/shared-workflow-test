@@ -8,9 +8,11 @@ Follow them exactly.
 1. **No inline scripts in YAML.** Every action/workflow `run:` is a single invocation of
    an external file — `node ${{ github.action_path }}/scripts/<x>.cli.mjs`. No `run: |`
    logic; no one-liners with shell operators (`&&`, `||`, `;`, `|`, `>`, `$(...)`). This
-   is enforced by `scripts/lib/guard/check-no-inline-scripts`, run in `test.yaml`. The
-   only whitelisted inline step is the pre-checkout bootstrap in `shared.yaml` (nothing is
-   on disk yet to call) — whitelisted by exact step name.
+   is enforced by `scripts/lib/guard/check-no-inline-scripts`, run in `test.yaml`. There is
+   **no** inline exception: `shared.yaml` bootstraps via `stefanpenner-cs/clone-action`
+   (clones this repo to `../_reusable-workflows`, referenced via `uses: ./../_reusable-workflows/...`),
+   so even that step is a plain `uses:`. (The guard still supports an injectable allowlist, but
+   it's empty.)
 2. **Everything is Node + tested, zero `node_modules`.** Scripts are ESM `.mjs`, run on
    **Node 24**, tested with `node:test` + `node:assert/strict`. No third-party deps.
    CI gates coverage (lines/functions/branches) — keep it green.

@@ -38,19 +38,13 @@ test("inlineErrors allows a single external invocation", () => {
   assert.equal(inlineErrors('steps:\n  - run: "node ${{ github.action_path }}/scripts/run.cli.mjs"\n').length, 0);
 });
 
-test("inlineErrors honours the whitelisted bootstrap step name", () => {
-  const yaml =
-    "steps:\n" +
-    "  - name: Set up shared actions (exclude from git)\n" +
-    "    run: mkdir -p .git/info && echo x >> .git/info/exclude\n";
-  assert.equal(inlineErrors(yaml).length, 0);
+test("inlineErrors honours an allowlisted step name (mechanism; default allowlist is empty)", () => {
+  const yaml = "steps:\n  - name: Bootstrap\n    run: mkdir -p x && echo y >> z\n";
+  assert.equal(inlineErrors(yaml).length, 1); // not allowed by default
+  assert.equal(inlineErrors(yaml, new Set(["Bootstrap"])).length, 0); // allowed when injected
 });
 
-test("inlineErrors does not let an unnamed run inherit a whitelisted name", () => {
-  const yaml =
-    "steps:\n" +
-    "  - name: Set up shared actions (exclude from git)\n" +
-    "    run: mkdir -p .git/info && echo x >> .git/info/exclude\n" +
-    "  - run: rm -rf / && echo bad\n";
-  assert.equal(inlineErrors(yaml).length, 1);
+test("inlineErrors does not let an unnamed run inherit an allowlisted name", () => {
+  const yaml = "steps:\n  - name: Bootstrap\n    run: mkdir -p x && echo y\n  - run: rm -rf / && echo bad\n";
+  assert.equal(inlineErrors(yaml, new Set(["Bootstrap"])).length, 1);
 });

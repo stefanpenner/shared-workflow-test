@@ -2,13 +2,9 @@
 // external-script invocation, never a block of embedded shell logic. Pure + exported
 // for testing; file discovery and process exit live in check-no-inline-scripts.cli.mjs.
 
-// Step names allowed to keep inline `run:` logic, each with a justification.
-export const ALLOW_NAMES = new Set([
-  // Pre-checkout bootstrap in the reusable workflow: it runs before any checkout, so
-  // nothing is on disk yet and it cannot call a repo-local script.
-  // See .github/workflows/shared.yaml.
-  "Set up shared actions (exclude from git)",
-]);
+// Step names allowed to keep inline `run:` logic, each with a justification. Empty: the former
+// bootstrap exception is gone — shared.yaml now uses stefanpenner-cs/clone-action (no inline run:).
+export const ALLOW_NAMES = new Set([]);
 
 // Shell metacharacters that indicate embedded logic rather than a single invocation.
 const SHELL_OPS = /&&|\|\||[;|`<>]|\$\(/;
@@ -35,8 +31,9 @@ export function isSingleInvocation(value) {
   return false;
 }
 
-// Scan one YAML document, returning [{ line, message }] for each violation.
-export function inlineErrors(yamlText) {
+// Scan one YAML document, returning [{ line, message }] for each violation. `allowNames` (a Set of
+// step names exempt from the rule) is injectable for testing; it defaults to ALLOW_NAMES.
+export function inlineErrors(yamlText, allowNames = ALLOW_NAMES) {
   const lines = yamlText.split("\n");
   const errors = [];
   let lastName = "";
@@ -47,7 +44,7 @@ export function inlineErrors(yamlText) {
     const runMatch = lines[i].match(/^\s*-?\s*run:\s*(.*)$/);
     if (!runMatch) continue;
 
-    const allowed = ALLOW_NAMES.has(lastName);
+    const allowed = allowNames.has(lastName);
     // A name applies to a single step; don't let a later unnamed run inherit it.
     lastName = "";
     if (allowed) continue;
