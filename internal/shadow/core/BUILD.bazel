@@ -7,10 +7,17 @@ go_library(
         "consumers.go",
         "dispatch.go",
         "mirrortree.go",
+        "patchworkflow.go",
+        "pulltrigger.go",
         "requireenv.go",
+        "resolvecontext.go",
+        "summary.go",
+        "transform.go",
+        "yamlnode.go",
     ],
     importpath = "github.com/stefanpenner-cs/reusable-workflows/internal/shadow/core",
     visibility = ["//:__subpackages__"],
+    deps = ["@in_gopkg_yaml_v3//:yaml_v3"],
 )
 
 go_test(
@@ -20,11 +27,17 @@ go_test(
         "consumers_test.go",
         "dispatch_test.go",
         "mirrortree_test.go",
+        "patchworkflow_test.go",
+        "pulltrigger_test.go",
         "requireenv_test.go",
+        "resolvecontext_test.go",
+        "summary_test.go",
+        "transform_test.go",
     ],
     embed = [":core"],
     deps = [
         "@com_github_stretchr_testify//assert",
         "@com_github_stretchr_testify//require",
+        "@in_gopkg_yaml_v3//:yaml_v3",
     ],
 )
