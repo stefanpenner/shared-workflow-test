@@ -16,7 +16,6 @@ on:
 permissions:
   contents: read
   pull-requests: write
-  checks: write
 
 concurrency:
   group: shadow-${{ github.event.pull_request.number || inputs.pr }}
@@ -49,7 +48,11 @@ jobs:
         id: list
         run: node shadow/src/bin/list-consumers.mts --consumers-file=${{ github.workspace }}/.github/shadow-consumers.json
 
+  # Named per consumer so the PR check reads "Shadow: <consumer>" and stays grouped under this
+  # workflow. (A Checks-API check run created from here can't choose its check-suite, so it ends up
+  # mis-grouped under another workflow — naming the job avoids that.)
   shadow:
+    name: 'Shadow: ${{ matrix.consumer.repo }}'
     needs: prepare
     runs-on: ubuntu-latest
     strategy:
@@ -64,5 +67,4 @@ jobs:
       - name: Dispatch and watch
         env:
           SHADOW_PAT: ${{ secrets.SHADOW_PAT }}
-          GITHUB_TOKEN: ${{ github.token }}
         run: node shadow/src/bin/dispatch-and-watch.mts --runner-repo=${{ env.RUNNER_REPO }} --workflows-repo=${{ github.repository }} --workflows-ref=${{ needs.prepare.outputs.sha }} --workflows-pr=${{ needs.prepare.outputs.pr }} --consumer-repo=${{ matrix.consumer.repo }} --consumer-ref=${{ matrix.consumer.ref }}

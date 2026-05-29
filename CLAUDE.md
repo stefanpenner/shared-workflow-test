@@ -55,12 +55,12 @@ Conventions specific to `shadow/`:
 - **Config comes from CLI flags, not env** — bins read `--workflows-repo` etc. via `requireArgs`
   (use `--flag=${{ ... }}` in YAML so empty values don't break parsing). Only **secrets**
   (`SHADOW_PAT`) and GHA sinks (`GITHUB_OUTPUT`) stay in env.
-- Each shadow test posts a **custom check run** on the PR (`Shadow: <consumer>`) via the Checks
-  API — created with the job's `GITHUB_TOKEN` (a PAT can't create check runs), `details_url` →
-  the shadow PR, markdown summary as its Details page. It's best-effort (a fork PR's read-only
-  token just skips it). The matrix job's own check coexists.
-- Logs are **plain text with full URLs** (GitHub logs don't render markdown — that's reserved for
-  the check's Details page / job summary).
+- Each shadow test is its own PR check named **`Shadow: <consumer>`** — done by naming the matrix
+  job (`name: 'Shadow: ${{ matrix.consumer.repo }}'`), NOT a Checks-API check run. (A check run
+  created from inside a workflow can't choose its check-suite, so it nests under the wrong workflow
+  and is hard to find — naming the job keeps the check correctly grouped under this workflow.)
+- The result is a markdown **table** written to the job summary (`$GITHUB_STEP_SUMMARY`); logs are
+  **plain text with full URLs** (GitHub logs don't render markdown).
 - **`yaml` is the only runtime dependency** (enforced by `check-deps`). Don't add others.
 
 ## Run locally (what CI runs)

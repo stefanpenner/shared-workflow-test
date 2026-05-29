@@ -63,47 +63,6 @@ export async function watchRun(opts: { runnerRepo: string; runId: number; token:
   await awaitRun({ repo: opts.runnerRepo, runId: opts.runId, token: opts.token, label: 'receiver run' });
 }
 
-/** Create an in-progress check run on the workflows repo's head SHA; returns its id. Checks API
- * needs a GitHub App token (the job's GITHUB_TOKEN with checks:write) — a PAT cannot create one. */
-export async function createCheckRun(opts: {
-  repo: string;
-  headSha: string;
-  name: string;
-  detailsUrl: string;
-  token: string;
-}): Promise<number> {
-  const body = JSON.stringify({ name: opts.name, head_sha: opts.headSha, status: 'in_progress', details_url: opts.detailsUrl });
-  const out = await capture('gh', ['api', '-X', 'POST', `repos/${opts.repo}/check-runs`, '--input', '-'], {
-    env: ghEnv(opts.token),
-    input: body,
-  });
-  const id = (JSON.parse(out) as { id?: unknown }).id;
-  if (typeof id !== 'number') throw new Error(`check-run create returned no numeric id: ${out}`);
-  return id;
-}
-
-/** Complete a check run with a conclusion + markdown output (the check's Details page). */
-export async function completeCheckRun(opts: {
-  repo: string;
-  id: number;
-  conclusion: 'success' | 'failure';
-  title: string;
-  summary: string;
-  detailsUrl: string;
-  token: string;
-}): Promise<void> {
-  const body = JSON.stringify({
-    status: 'completed',
-    conclusion: opts.conclusion,
-    details_url: opts.detailsUrl,
-    output: { title: opts.title, summary: opts.summary },
-  });
-  await capture('gh', ['api', '-X', 'PATCH', `repos/${opts.repo}/check-runs/${opts.id}`, '--input', '-'], {
-    env: ghEnv(opts.token),
-    input: body,
-  });
-}
-
 /** URL of the open PR for a head branch, or null if none exists. */
 export async function findPrUrl(opts: { repo: string; branch: string; token: string }): Promise<string | null> {
   const out = await capture(
