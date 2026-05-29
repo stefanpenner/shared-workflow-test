@@ -1,3 +1,3 @@
-import { lintSummary } from "./lint.mjs";
+import { report } from "./lint.mjs";
 
-console.log(lintSummary(process.env.LINT_PATHS, process.env.LINT_CONFIG));
+console.log(report(process.env.LINT_PATHS, process.env.LINT_CONFIG));

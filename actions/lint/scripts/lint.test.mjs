@@ -1,12 +1,12 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { lintSummary } from "./lint.mjs";
+import { report } from "./lint.mjs";
 
-test("lintSummary reports the given paths and config", () => {
-  assert.equal(lintSummary("src", "eslint.config.js"), "Linting src...\nUsing config: eslint.config.js");
+test("report shows the given paths and config", () => {
+  assert.equal(report("src", "eslint.config.js"), "▸ Lint\n  paths   src\n  config  eslint.config.js");
 });
 
-test("lintSummary falls back to defaults when inputs are empty", () => {
-  assert.equal(lintSummary("", ""), "Linting ....\nUsing config: .eslintrc");
-  assert.equal(lintSummary(undefined, undefined), "Linting ....\nUsing config: .eslintrc");
+test("report falls back to defaults when inputs are empty", () => {
+  assert.equal(report("", ""), "▸ Lint\n  paths   .\n  config  .eslintrc");
+  assert.equal(report(undefined, undefined), "▸ Lint\n  paths   .\n  config  .eslintrc");
 });

@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { resolveNodeVersion, greeting, renderOutputs } from "./setup.mjs";
+import { resolveNodeVersion, report, renderOutputs } from "./setup.mjs";
 
 test("resolveNodeVersion trims and returns the requested version", () => {
   assert.equal(resolveNodeVersion(" 20 "), "20");
@@ -12,13 +12,13 @@ test("resolveNodeVersion throws when empty or undefined", () => {
   assert.throws(() => resolveNodeVersion(undefined), /required/);
 });
 
-test("greeting uses the project name", () => {
-  assert.equal(greeting("demo"), "Setting up environment for demo...");
+test("report shows the project and node version", () => {
+  assert.equal(report("demo", "20"), "▸ Setup\n  project       demo\n  node version  20");
 });
 
-test("greeting falls back when the project name is empty", () => {
-  assert.equal(greeting(""), "Setting up environment for (unknown project)...");
-  assert.equal(greeting(undefined), "Setting up environment for (unknown project)...");
+test("report falls back when the project name is empty", () => {
+  assert.match(report("", "20"), /project +\(unknown project\)/);
+  assert.match(report(undefined, "20"), /project +\(unknown project\)/);
 });
 
 test("renderOutputs formats key=value lines with a trailing newline", () => {

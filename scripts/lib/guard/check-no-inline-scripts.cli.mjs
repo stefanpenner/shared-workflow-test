@@ -30,16 +30,17 @@ function discover() {
   return files;
 }
 
+const files = discover();
 let violations = 0;
-for (const file of discover()) {
+for (const file of files) {
   for (const { line, message } of inlineErrors(readFileSync(file, "utf8"))) {
-    console.error(`${file}:${line}: ${message}`);
+    console.error(`✗ ${file}:${line}  ${message}`);
     violations++;
   }
 }
 
 if (violations > 0) {
-  console.error(`\nno-inline-scripts: ${violations} violation(s) found`);
+  console.error(`\n✗ no-inline-scripts: ${violations} violation(s) across ${files.length} file(s)`);
   process.exit(1);
 }
-console.log("no-inline-scripts: OK");
+console.log(`✓ no-inline-scripts: ${files.length} file(s) clean`);
