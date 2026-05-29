@@ -79,7 +79,7 @@ node scripts/lib/guard/check-no-inline-scripts.cli.mjs   # no inline run: blocks
 node scripts/lint.mjs                                    # eslint + prettier (.mjs/.mts/YAML) + import allowlist
 node shadow/src/bin/check-deps.mts                       # shadow's only runtime dep is `yaml`
 node shadow/typecheck.mjs                                # isolated tsc --noEmit
-node --test 'actions/**/*.test.mjs' 'scripts/**/*.test.mjs' 'shadow/test/*.test.mts'
+node --test '**/*.test.{mjs,mts}'                        # tests (CI also gates coverage — see test.yaml)
 ```
 
 The only third-party tooling is dev-only — `eslint` + `prettier` lint the repo's own `.mjs`,

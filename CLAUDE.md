@@ -26,19 +26,30 @@ Follow them exactly.
 4. **Module allowlist** (ESLint `no-restricted-imports`): source may import only `node:*` ·
    relative · `yaml` · `@actions/*`. `@actions/*` is permitted but unused — narrow it later;
    adopting one means adding it to a `package.json` (`check-deps` allows `yaml` + `@actions/*`).
+5. **CLI args, not env vars, for parameters.** Pass a script's parameters as named flags
+   (`--flag=value`), never through environment variables. Env is reserved for genuinely *global*
+   state: secrets/tokens, OTel config, and GHA-provided context/sinks (`GITHUB_OUTPUT`,
+   `GITHUB_WORKSPACE`, `HOME`). Every CLI parses argv through a **tested** parser
+   (`scripts/lib/args` for actions, `shadow/src/core/args.mts` for shadow) that validates presence,
+   rejects empty values, and fails with an error naming the offending flag. In YAML, pass values as
+   `--flag=${{ inputs.x }}` so an empty value can't shift positional parsing.
 
 ## Layout (per action)
 
 - `actions/<name>/scripts/<name>.mjs` — **pure** logic: no side effects on import, no
   `process.env` reads. Imported by the test.
-- `actions/<name>/scripts/<name>.cli.mjs` — thin entry the action invokes: reads env, does
-  the real I/O, calls the pure module.
+- `actions/<name>/scripts/<name>.cli.mjs` — thin entry the action invokes: parses its named
+  args (and reads env *sinks* like `GITHUB_OUTPUT`), does the real I/O, calls the pure module.
 - `actions/<name>/scripts/<name>.test.mjs` — `node:test` over the pure module.
 - Shared tooling lives in `scripts/lib/**` (guard, formatters), each with a sibling test.
 
 ## Style
 
-- **TDD.** Write the test first; keep logic in small pure functions so it's trivial to test.
+- **TDD — red → green → refactor.** All coding *and* refactoring follows this cycle: write a
+  failing test first (**red**), write the minimum code to pass it (**green**), then clean up with
+  the tests green (**refactor**). Refactors change structure, never behavior — so they start from
+  green and stay green; if no test covers what you're about to change, add one first. Keep logic in
+  small pure functions so each step is trivial to test.
 - **Simplicity & correctness over cleverness.** ELI5-clean, readable syntax; clean models, not
   hacks. If it needs a comment to explain a trick, prefer the boring version.
 - **`try/catch/finally`, not `.catch()`/`.then()`.** Linear control flow reads top-to-bottom.
@@ -46,7 +57,7 @@ Follow them exactly.
   (e.g. the `$GITHUB_OUTPUT` path) so tests point it at a temp file.
 - **Errors: no silent failures.** Catch only the error you expect; rethrow the rest.
   Attribute failures and chain the original with `new Error('context', { cause: err })`.
-- A `.cli.mjs` is the only place that reads env / writes files; keep it tiny.
+- A `.cli.mjs` is the only place that parses argv / reads env sinks / writes files; keep it tiny.
 
 ## Shadow testing (`shadow/`)
 
@@ -84,11 +95,5 @@ node scripts/lib/guard/check-no-inline-scripts.cli.mjs   # no inline run: blocks
 node scripts/lint.mjs                                     # eslint + prettier (.mjs + YAML)
 node shadow/src/bin/check-deps.mts                        # shadow: yaml-only runtime dep
 node shadow/typecheck.mjs                                 # isolated tsc --noEmit
-node --test --experimental-test-coverage \
-  --test-coverage-lines=95 --test-coverage-functions=100 --test-coverage-branches=90 \
-  '--test-coverage-include=actions/**/*.mjs' '--test-coverage-include=scripts/**/*.mjs' \
-  '--test-coverage-include=shadow/src/**/*.mts' '--test-coverage-exclude=**/*.test.*' \
-  '--test-coverage-exclude=**/*.cli.mjs' '--test-coverage-exclude=shadow/src/bin/**' \
-  '--test-coverage-exclude=shadow/src/adapters/**' \
-  'actions/**/*.test.mjs' 'scripts/**/*.test.mjs' 'shadow/test/*.test.mts'
+node --test '**/*.test.{mjs,mts}'   # tests (CI's test.yaml step adds the coverage gate)
 ```

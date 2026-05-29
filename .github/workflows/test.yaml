@@ -33,7 +33,19 @@ jobs:
       - name: Typecheck (isolated tsc)
         run: node shadow/typecheck.mjs
 
-      # Single test command for the whole repo, coverage-gated. Globs are single-quoted so Node
-      # (not the shell) expands them; coverage covers the pure layers (bins/adapters excluded).
+      # Tests + coverage gate for the whole repo. One arg per line so it reads top-to-bottom; the
+      # globs are single-quoted so Node — not the shell — expands them. Repo-wide globs: run every
+      # *.test.{mjs,mts}, cover every source module, and exclude the layers we don't unit-test by
+      # convention — tests, action entrypoints (*.cli.mjs), binaries (bin/), and I/O adapters.
       - name: Tests + coverage
-        run: node --test --experimental-test-coverage --test-coverage-lines=95 --test-coverage-functions=100 --test-coverage-branches=90 '--test-coverage-include=actions/**/*.mjs' '--test-coverage-include=scripts/**/*.mjs' '--test-coverage-include=shadow/src/**/*.mts' '--test-coverage-exclude=**/*.test.*' '--test-coverage-exclude=**/*.cli.mjs' '--test-coverage-exclude=shadow/src/bin/**' '--test-coverage-exclude=shadow/src/adapters/**' 'actions/**/*.test.mjs' 'scripts/**/*.test.mjs' 'shadow/test/*.test.mts'
+        run: node --test
+          --experimental-test-coverage
+          --test-coverage-lines=95
+          --test-coverage-functions=100
+          --test-coverage-branches=90
+          --test-coverage-include='**/*.{mjs,mts}'
+          --test-coverage-exclude='**/*.test.*'
+          --test-coverage-exclude='**/*.cli.mjs'
+          --test-coverage-exclude='**/bin/**'
+          --test-coverage-exclude='**/adapters/**'
+          '**/*.test.{mjs,mts}'

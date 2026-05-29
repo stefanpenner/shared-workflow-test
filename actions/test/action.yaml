@@ -13,7 +13,4 @@ runs:
   using: composite
   steps:
     - shell: bash
-      env:
-        TEST_SUITE: ${{ inputs.suite }}
-        COVERAGE_ENABLED: ${{ inputs.coverage }}
-      run: "node ${{ github.action_path }}/scripts/test.cli.mjs"
+      run: "node ${{ github.action_path }}/scripts/test.cli.mjs --suite='${{ inputs.suite }}' --coverage='${{ inputs.coverage }}'"
