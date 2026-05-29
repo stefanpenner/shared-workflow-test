@@ -2,6 +2,7 @@ import { appendFileSync } from 'node:fs';
 import { parseArgs } from 'node:util';
 import { requireEnv } from '../core/requireEnv.mts';
 import { resolveContext } from '../core/resolveContext.mts';
+import { workflowsPrUrl, commitUrl } from '../core/summary.mts';
 import { capture } from '../adapters/exec.mts';
 
 /**
@@ -34,10 +35,14 @@ async function main(): Promise<void> {
   });
 
   appendFileSync(requireEnv('GITHUB_OUTPUT'), `pr=${pr}\nsha=${sha}\n`);
-  console.log(`✅ resolved PR #${pr} @ ${sha.slice(0, 7)}`);
+  const repo = values['workflows-repo'] ?? '';
+  console.log(`✅ resolved PR #${pr}  ${workflowsPrUrl(repo, pr)}`);
+  console.log(`   head ${sha.slice(0, 7)}  ${commitUrl(repo, sha)}`);
 }
 
-main().catch((error) => {
+try {
+  await main();
+} catch (error) {
   console.error(error);
   process.exit(1);
-});
+}

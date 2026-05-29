@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { renderShadowSummary, renderShadowLog } from '../src/core/summary.mts';
+import { renderShadowSummary, renderShadowLog, checkName, checkTitle, workflowsPrUrl, commitUrl } from '../src/core/summary.mts';
 
 const base = {
   consumerRepo: 'o/consumer',
@@ -51,5 +51,21 @@ describe('renderShadowLog', () => {
     const lines = renderShadowLog({ ...base, result: 'failed', prUrl: null });
     assert.ok(lines.some((l) => l.includes('❌ Shadow test failed')));
     assert.ok(!lines.some((l) => l.includes('shadow PR')));
+  });
+});
+
+describe('check helpers', () => {
+  it('checkName uses the consumer repo short name', () => {
+    assert.equal(checkName('o/reusable-workflows-consumer'), 'Shadow: reusable-workflows-consumer');
+  });
+
+  it('checkTitle reflects the result', () => {
+    assert.equal(checkTitle({ consumerRepo: 'o/c', result: 'passed' }), '✅ passed — o/c');
+    assert.equal(checkTitle({ consumerRepo: 'o/c', result: 'failed' }), '❌ failed — o/c');
+  });
+
+  it('builds PR and commit URLs', () => {
+    assert.equal(workflowsPrUrl('o/w', 7), 'https://github.com/o/w/pull/7');
+    assert.equal(commitUrl('o/w', 'abc'), 'https://github.com/o/w/commit/abc');
   });
 });

@@ -53,3 +53,17 @@ export function renderShadowLog(input: ShadowSummaryInput): string[] {
   if (input.prUrl) lines.push(`   shadow PR:  ${input.prUrl}`);
   return lines;
 }
+
+export const workflowsPrUrl = (repo: string, pr: number | string): string => `https://github.com/${repo}/pull/${pr}`;
+export const commitUrl = (repo: string, sha: string): string => `https://github.com/${repo}/commit/${sha}`;
+
+/** Clean name for the per-consumer custom check, e.g. "Shadow: reusable-workflows-consumer". */
+export function checkName(consumerRepo: string): string {
+  return `Shadow: ${consumerRepo.split('/').pop()}`;
+}
+
+/** One-line check title, e.g. "✅ passed — owner/consumer". */
+export function checkTitle(input: { consumerRepo: string; result: ShadowResult }): string {
+  const icon = input.result === 'passed' ? '✅' : '❌';
+  return `${icon} ${input.result} — ${input.consumerRepo}`;
+}

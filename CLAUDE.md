@@ -26,6 +26,10 @@ Follow them exactly.
 
 ## Style
 
+- **TDD.** Write the test first; keep logic in small pure functions so it's trivial to test.
+- **Simplicity & correctness over cleverness.** ELI5-clean, readable syntax; clean models, not
+  hacks. If it needs a comment to explain a trick, prefer the boring version.
+- **`try/catch/finally`, not `.catch()`/`.then()`.** Linear control flow reads top-to-bottom.
 - Pure functions take every input as an argument and return a value; inject the I/O sink
   (e.g. the `$GITHUB_OUTPUT` path) so tests point it at a temp file.
 - **Errors: no silent failures.** Catch only the error you expect; rethrow the rest.
@@ -34,11 +38,11 @@ Follow them exactly.
 
 ## Shadow testing (`shadow/`)
 
-All shadow-testing logic lives in `shadow/` in **this** repo (one place to change it). TypeScript on
-raw **Node 24** (type-stripping), **no npm / no `node_modules`**: its one dependency, `yaml`, is
-**vendored** at `shadow/vendor/yaml/` (imported by relative path; it carries its own
-`type: commonjs`). Everything — bins, tests, the runner's `mirror-and-test` — runs with `node`
-directly. It's covered by the repo's single test harness (see below), not a separate pipeline.
+All shadow-testing logic lives in `shadow/` in **this** repo (one place to change it). `.mts`
+TypeScript run on **Node 24** (type-stripping at runtime — no transpile step). **`yaml` is the ONE
+runtime dependency**, brought in via npm and enforced by `shadow/src/bin/check-deps.mts` (no other
+deps allowed). Types are checked separately and only by the isolated `tsc` (`node shadow/typecheck.mjs`
+→ `tsc --noEmit`); the runtime never runs tsc. devDeps exist solely for that typecheck.
 
 Terminology (used consistently in code, **CLI flags**, and docs):
 
@@ -51,10 +55,13 @@ Conventions specific to `shadow/`:
 - **Config comes from CLI flags, not env** — bins read `--workflows-repo` etc. via `requireArgs`
   (use `--flag=${{ ... }}` in YAML so empty values don't break parsing). Only **secrets**
   (`SHADOW_PAT`) and GHA sinks (`GITHUB_OUTPUT`) stay in env.
-- Result is a **job summary** on the shadow check (no PR comments); the dispatch job watches
-  **silently** (no poll logs) — just links + a clear pass/fail, with a red `::error::` annotation
-  linking to the failure.
-- Don't add a runtime dependency. If you must, vendor it like `yaml`.
+- Each shadow test posts a **custom check run** on the PR (`Shadow: <consumer>`) via the Checks
+  API — created with the job's `GITHUB_TOKEN` (a PAT can't create check runs), `details_url` →
+  the shadow PR, markdown summary as its Details page. It's best-effort (a fork PR's read-only
+  token just skips it). The matrix job's own check coexists.
+- Logs are **plain text with full URLs** (GitHub logs don't render markdown — that's reserved for
+  the check's Details page / job summary).
+- **`yaml` is the only runtime dependency** (enforced by `check-deps`). Don't add others.
 
 ## Run locally (what CI runs)
 

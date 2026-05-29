@@ -20,11 +20,15 @@ jobs:
       - name: No inline scripts
         run: node scripts/lib/guard/check-no-inline-scripts.cli.mjs
 
+      - name: Dependency policy (yaml only)
+        run: node shadow/src/bin/check-deps.mts
+
       # Isolated type-check: Node strips types at runtime; this is the only place npm/tsc appears.
+      # It also installs shadow's deps (yaml) so the test step below can resolve them.
       - name: Typecheck (isolated tsc)
         run: node shadow/typecheck.mjs
 
       # Single test command for the whole repo, coverage-gated. Globs are single-quoted so Node
-      # (not the shell) expands them; coverage covers the pure layers (bins/adapters/vendor excluded).
+      # (not the shell) expands them; coverage covers the pure layers (bins/adapters excluded).
       - name: Tests + coverage
-        run: node --test --experimental-test-coverage --test-coverage-lines=95 --test-coverage-functions=100 --test-coverage-branches=90 '--test-coverage-include=actions/**/*.mjs' '--test-coverage-include=scripts/**/*.mjs' '--test-coverage-include=shadow/src/**/*.mts' '--test-coverage-exclude=**/*.test.*' '--test-coverage-exclude=**/*.cli.mjs' '--test-coverage-exclude=shadow/src/bin/**' '--test-coverage-exclude=shadow/src/adapters/**' '--test-coverage-exclude=shadow/vendor/**' 'actions/**/*.test.mjs' 'scripts/**/*.test.mjs' 'shadow/test/*.test.mts'
+        run: node --test --experimental-test-coverage --test-coverage-lines=95 --test-coverage-functions=100 --test-coverage-branches=90 '--test-coverage-include=actions/**/*.mjs' '--test-coverage-include=scripts/**/*.mjs' '--test-coverage-include=shadow/src/**/*.mts' '--test-coverage-exclude=**/*.test.*' '--test-coverage-exclude=**/*.cli.mjs' '--test-coverage-exclude=shadow/src/bin/**' '--test-coverage-exclude=shadow/src/adapters/**' 'actions/**/*.test.mjs' 'scripts/**/*.test.mjs' 'shadow/test/*.test.mts'

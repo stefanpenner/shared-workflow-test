@@ -1,5 +1,4 @@
-import _yaml from '../../vendor/yaml/index.js';
-const { parseDocument, isMap, isSeq, isScalar, YAMLSeq } = _yaml;
+import { parseDocument, isMap, isSeq, isScalar, YAMLSeq } from 'yaml';
 
 /**
  * Ensure a workflow triggers on `pull_request`, so opening a shadow PR in the runner actually runs

@@ -76,7 +76,9 @@ async function main(): Promise<void> {
   await github.watchCommitRun({ repo: runnerRepo, sha, token });
 }
 
-main().catch((error) => {
+try {
+  await main();
+} catch (error) {
   console.error(error);
   process.exit(1);
-});
+}

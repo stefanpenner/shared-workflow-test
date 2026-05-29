@@ -16,6 +16,7 @@ on:
 permissions:
   contents: read
   pull-requests: write
+  checks: write
 
 concurrency:
   group: shadow-${{ github.event.pull_request.number || inputs.pr }}
@@ -63,4 +64,5 @@ jobs:
       - name: Dispatch and watch
         env:
           SHADOW_PAT: ${{ secrets.SHADOW_PAT }}
+          GITHUB_TOKEN: ${{ github.token }}
         run: node shadow/src/bin/dispatch-and-watch.mts --runner-repo=${{ env.RUNNER_REPO }} --workflows-repo=${{ github.repository }} --workflows-ref=${{ needs.prepare.outputs.sha }} --workflows-pr=${{ needs.prepare.outputs.pr }} --consumer-repo=${{ matrix.consumer.repo }} --consumer-ref=${{ matrix.consumer.ref }}

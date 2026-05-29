@@ -63,6 +63,47 @@ export async function watchRun(opts: { runnerRepo: string; runId: number; token:
   await awaitRun({ repo: opts.runnerRepo, runId: opts.runId, token: opts.token, label: 'receiver run' });
 }
 
+/** Create an in-progress check run on the workflows repo's head SHA; returns its id. Checks API
+ * needs a GitHub App token (the job's GITHUB_TOKEN with checks:write) — a PAT cannot create one. */
+export async function createCheckRun(opts: {
+  repo: string;
+  headSha: string;
+  name: string;
+  detailsUrl: string;
+  token: string;
+}): Promise<number> {
+  const body = JSON.stringify({ name: opts.name, head_sha: opts.headSha, status: 'in_progress', details_url: opts.detailsUrl });
+  const out = await capture('gh', ['api', '-X', 'POST', `repos/${opts.repo}/check-runs`, '--input', '-'], {
+    env: ghEnv(opts.token),
+    input: body,
+  });
+  const id = (JSON.parse(out) as { id?: unknown }).id;
+  if (typeof id !== 'number') throw new Error(`check-run create returned no numeric id: ${out}`);
+  return id;
+}
+
+/** Complete a check run with a conclusion + markdown output (the check's Details page). */
+export async function completeCheckRun(opts: {
+  repo: string;
+  id: number;
+  conclusion: 'success' | 'failure';
+  title: string;
+  summary: string;
+  detailsUrl: string;
+  token: string;
+}): Promise<void> {
+  const body = JSON.stringify({
+    status: 'completed',
+    conclusion: opts.conclusion,
+    details_url: opts.detailsUrl,
+    output: { title: opts.title, summary: opts.summary },
+  });
+  await capture('gh', ['api', '-X', 'PATCH', `repos/${opts.repo}/check-runs/${opts.id}`, '--input', '-'], {
+    env: ghEnv(opts.token),
+    input: body,
+  });
+}
+
 /** URL of the open PR for a head branch, or null if none exists. */
 export async function findPrUrl(opts: { repo: string; branch: string; token: string }): Promise<string | null> {
   const out = await capture(
@@ -112,13 +153,16 @@ export async function watchCommitRun(opts: {
 
   let runId = '';
   for (let i = 0; i < attempts; i++) {
-    runId = (
-      await capture(
+    try {
+      const out = await capture(
         'gh',
         ['run', 'list', '-R', opts.repo, '--commit', opts.sha, '--json', 'databaseId', '--jq', '.[0].databaseId // ""'],
         { env },
-      ).catch(() => '')
-    ).trim();
+      );
+      runId = out.trim();
+    } catch {
+      runId = ''; // run not listed yet; keep polling
+    }
     if (runId) break;
     if (i === attempts - 1) {
       throw new Error(`no workflow run appeared for ${opts.repo}@${opts.sha} after ${(attempts * intervalMs) / 1000}s`);
@@ -134,7 +178,15 @@ export async function closePrAndDeleteBranch(opts: { repo: string; branch: strin
   const env = ghEnv(opts.token);
   const url = await findPrUrl(opts);
   if (url) {
-    await run('gh', ['pr', 'close', url, '-R', opts.repo, '--delete-branch'], { env }).catch(() => {});
+    try {
+      await run('gh', ['pr', 'close', url, '-R', opts.repo, '--delete-branch'], { env });
+    } catch {
+      // PR already closed/gone — nothing to do.
+    }
   }
-  await capture('gh', ['api', '-X', 'DELETE', `repos/${opts.repo}/git/refs/heads/${opts.branch}`], { env }).catch(() => {});
+  try {
+    await capture('gh', ['api', '-X', 'DELETE', `repos/${opts.repo}/git/refs/heads/${opts.branch}`], { env });
+  } catch {
+    // Branch already deleted — nothing to do.
+  }
 }
