@@ -1,0 +1,98 @@
+name: Shadow test consumers
+
+# On a labeled PR (or manual dispatch), run this PR's draft state against each real consumer under
+# an authentic pull_request event in the shadow harness, and reflect the result back here.
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled]
+  workflow_dispatch:
+    inputs:
+      pr:
+        description: provider PR number to shadow-test
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: shadow-${{ github.event.pull_request.number || inputs.pr }}
+  cancel-in-progress: true
+
+env:
+  HARNESS_REPO: stefanpenner-cs/reusable-workflows-shadow-testing
+
+jobs:
+  prepare:
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.pull_request.labels.*.name, 'shadow-test')
+    runs-on: ubuntu-latest
+    outputs:
+      consumers: ${{ steps.list.outputs.consumers }}
+      pr: ${{ steps.ctx.outputs.pr }}
+      sha: ${{ steps.ctx.outputs.sha }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: actionlint (cheap gate on the provider draft)
+        run: |
+          bash <(curl -sSf https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash)
+          ./actionlint -color .github/workflows/*.y*ml
+
+      - name: Resolve PR + head SHA
+        id: ctx
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "pr=${{ github.event.pull_request.number }}" >> "$GITHUB_OUTPUT"
+            echo "sha=${{ github.event.pull_request.head.sha }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "pr=${{ inputs.pr }}" >> "$GITHUB_OUTPUT"
+            echo "sha=$(gh pr view ${{ inputs.pr }} --json headRefOid --jq .headRefOid)" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ env.HARNESS_REPO }}
+          ref: main
+          path: .shadow-harness
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: .shadow-harness/package-lock.json
+      - run: npm ci
+        working-directory: .shadow-harness
+      - id: list
+        working-directory: .shadow-harness
+        env:
+          CONSUMERS_FILE: ${{ github.workspace }}/.github/shadow-consumers.json
+        run: npx tsx src/bin/list-consumers.ts
+
+  shadow:
+    needs: prepare
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        consumer: ${{ fromJSON(needs.prepare.outputs.consumers) }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ env.HARNESS_REPO }}
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npx tsx src/bin/dispatch-and-watch.ts
+        env:
+          HARNESS_REPO: ${{ env.HARNESS_REPO }}
+          PROVIDER_REPO: ${{ github.repository }}
+          PROVIDER_REF: ${{ needs.prepare.outputs.sha }}
+          PROVIDER_PR: ${{ needs.prepare.outputs.pr }}
+          CONSUMER_REPO: ${{ matrix.consumer.repo }}
+          CONSUMER_REF: ${{ matrix.consumer.ref }}
+          SHADOW_PAT: ${{ secrets.SHADOW_PAT }}

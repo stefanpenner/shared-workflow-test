@@ -1,0 +1,37 @@
+name: Shadow cleanup
+
+# When a provider PR closes, tear down its shadow PRs + branches in the harness.
+on:
+  pull_request:
+    types: [closed]
+
+permissions:
+  contents: read
+
+env:
+  HARNESS_REPO: stefanpenner-cs/reusable-workflows-shadow-testing
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ env.HARNESS_REPO }}
+          ref: main
+          path: .shadow-harness
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: .shadow-harness/package-lock.json
+      - run: npm ci
+        working-directory: .shadow-harness
+      - working-directory: .shadow-harness
+        env:
+          HARNESS_REPO: ${{ env.HARNESS_REPO }}
+          PROVIDER_PR: ${{ github.event.pull_request.number }}
+          CONSUMERS_FILE: ${{ github.workspace }}/.github/shadow-consumers.json
+          SHADOW_PAT: ${{ secrets.SHADOW_PAT }}
+        run: npx tsx src/bin/cleanup.ts
