@@ -1,0 +1,13 @@
+# Pure Go everywhere: CGO_ENABLED=0, no C toolchain on the critical path.
+build --@rules_go//go/config:pure
+
+# Readable test failures by default.
+test --test_output=errors
+
+# CI profile: quiet progress, only failing test output, build only what tests need.
+build:ci --noshow_progress
+test:ci --test_output=errors
+test:ci --build_tests_only
+
+# Static linking is Linux-only (macOS can't fully static-link libc). Use on release/cross builds.
+build:linux --@rules_go//go/config:static

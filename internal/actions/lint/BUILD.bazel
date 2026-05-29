@@ -1,0 +1,16 @@
+load("@rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "lint",
+    srcs = ["lint.go"],
+    importpath = "github.com/stefanpenner-cs/reusable-workflows/internal/actions/lint",
+    visibility = ["//:__subpackages__"],
+    deps = ["//internal/ghactions"],
+)
+
+go_test(
+    name = "lint_test",
+    srcs = ["lint_test.go"],
+    embed = [":lint"],
+    deps = ["@com_github_stretchr_testify//assert"],
+)

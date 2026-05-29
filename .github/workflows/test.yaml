@@ -1,8 +1,8 @@
 name: Test
 
-# One harness for the whole repo: static gates (no-inline guard, eslint + prettier, dep policy,
-# isolated tsc) plus a single `node --test` run covering the actions (.mjs), shared scripts (.mjs),
-# and shadow/ (.mts, run natively on Node 24). npm appears only in the lint/typecheck drivers.
+# One harness for the whole repo, all Go built with Bazel: the no-inline guard, `bazel test //...`
+# (every *_test.go), golangci-lint + yamllint, and a line-coverage gate. Bazel is pinned by
+# .bazelversion (read by bazelisk); golangci-lint/yamllint/covergate use a host Go toolchain.
 on:
   push:
     branches: [main]
@@ -14,38 +14,26 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-go@v5
         with:
-          node-version: "24"
+          go-version-file: go.mod
+      - uses: bazel-contrib/setup-bazel@0.15.0
+        with:
+          bazelisk-cache: true
+          disk-cache: true
+          repository-cache: true
 
       - name: No inline scripts
-        run: node scripts/lib/guard/check-no-inline-scripts.cli.mjs
+        run: bazelisk run //tools/guard
 
-      # Lint the repo's own .mjs + YAML. Installs root dev tooling (eslint + prettier) and runs both.
-      - name: Lint (eslint + prettier)
-        run: node scripts/lint.mjs
+      - name: Build + test
+        run: bazelisk test //... --config=ci
 
-      - name: Dependency policy (yaml only)
-        run: node shadow/src/bin/check-deps.mts
+      - name: Lint (Go)
+        uses: golangci/golangci-lint-action@v6
 
-      # Isolated type-check: Node strips types at runtime; this is the only place npm/tsc appears.
-      # It also installs shadow's deps (yaml) so the test step below can resolve them.
-      - name: Typecheck (isolated tsc)
-        run: node shadow/typecheck.mjs
+      - name: Lint (YAML)
+        uses: ibiqlik/action-yamllint@v3
 
-      # Tests + coverage gate for the whole repo. One arg per line so it reads top-to-bottom; the
-      # globs are single-quoted so Node — not the shell — expands them. Repo-wide globs: run every
-      # *.test.{mjs,mts}, cover every source module, and exclude the layers we don't unit-test by
-      # convention — tests, action entrypoints (*.cli.mjs), binaries (bin/), and I/O adapters.
-      - name: Tests + coverage
-        run: node --test
-          --experimental-test-coverage
-          --test-coverage-lines=95
-          --test-coverage-functions=100
-          --test-coverage-branches=90
-          --test-coverage-include='**/*.{mjs,mts}'
-          --test-coverage-exclude='**/*.test.*'
-          --test-coverage-exclude='**/*.cli.mjs'
-          --test-coverage-exclude='**/bin/**'
-          --test-coverage-exclude='**/adapters/**'
-          '**/*.test.{mjs,mts}'
+      - name: Coverage gate
+        run: go run ./tools/covergate -min 90

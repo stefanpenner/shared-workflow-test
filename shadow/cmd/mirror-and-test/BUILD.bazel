@@ -1,0 +1,20 @@
+load("@rules_go//go:def.bzl", "go_binary", "go_library")
+
+go_library(
+    name = "mirror-and-test_lib",
+    srcs = ["main.go"],
+    importpath = "github.com/stefanpenner-cs/reusable-workflows/shadow/cmd/mirror-and-test",
+    visibility = ["//visibility:private"],
+    deps = [
+        "//internal/ghactions",
+        "//internal/shadow/adapters",
+        "//internal/shadow/core",
+        "@com_github_spf13_cobra//:cobra",
+    ],
+)
+
+go_binary(
+    name = "mirror-and-test",
+    embed = [":mirror-and-test_lib"],
+    visibility = ["//visibility:public"],
+)

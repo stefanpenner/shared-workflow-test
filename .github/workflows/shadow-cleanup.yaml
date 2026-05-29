@@ -1,7 +1,7 @@
 name: Shadow cleanup
 
 # When a workflows PR closes, tear down its shadow PRs + branches in the runner.
-# Runs shadow/ from this repo's own checkout (cleanup is dependency-free → raw Node 24).
+# Runs shadow/cmd from this repo's own checkout (Bazel builds it).
 on:
   pull_request:
     types: [closed]
@@ -17,10 +17,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: bazel-contrib/setup-bazel@0.15.0
         with:
-          node-version: 24
+          bazelisk-cache: true
+          disk-cache: true
+          repository-cache: true
       - name: Tear down shadow PRs + branches
         env:
           SHADOW_PAT: ${{ secrets.SHADOW_PAT }}
-        run: node shadow/src/bin/cleanup.mts --runner-repo=${{ env.RUNNER_REPO }} --workflows-pr=${{ github.event.pull_request.number }} --consumers-file=${{ github.workspace }}/.github/shadow-consumers.json
+        run: bazelisk run //shadow/cmd/cleanup -- --runner-repo=${{ env.RUNNER_REPO }} --workflows-pr=${{ github.event.pull_request.number }} --consumers-file=${{ github.workspace }}/.github/shadow-consumers.json

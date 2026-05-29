@@ -2,7 +2,8 @@ name: Shadow test consumers
 
 # On a labeled PR (or manual dispatch), run this PR's draft against each real consumer under an
 # authentic pull_request event in the shadow runner, and report the result here. All logic lives in
-# shadow/ in THIS repo and runs from this checkout; the runner repo is only the dispatch venue.
+# shadow/cmd in THIS repo and runs from this checkout (Bazel builds it); the runner repo is only the
+# dispatch venue.
 on:
   pull_request:
     types: [opened, synchronize, reopened, labeled]
@@ -34,19 +35,21 @@ jobs:
       sha: ${{ steps.ctx.outputs.sha }}
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: bazel-contrib/setup-bazel@0.15.0
         with:
-          node-version: 24
+          bazelisk-cache: true
+          disk-cache: true
+          repository-cache: true
 
       - name: Resolve PR + head SHA
         id: ctx
         env:
           GH_TOKEN: ${{ github.token }}
-        run: node shadow/src/bin/resolve-ctx.mts --event-name=${{ github.event_name }} --pr-number=${{ github.event.pull_request.number }} --head-sha=${{ github.event.pull_request.head.sha }} --input-pr=${{ inputs.pr }} --workflows-repo=${{ github.repository }}
+        run: bazelisk run //shadow/cmd/resolve-ctx -- --event-name=${{ github.event_name }} --pr-number=${{ github.event.pull_request.number }} --head-sha=${{ github.event.pull_request.head.sha }} --input-pr=${{ inputs.pr }} --workflows-repo=${{ github.repository }}
 
       - name: List consumers
         id: list
-        run: node shadow/src/bin/list-consumers.mts --consumers-file=${{ github.workspace }}/.github/shadow-consumers.json --workflows-pr=${{ steps.ctx.outputs.pr }} --runner-repo=${{ env.RUNNER_REPO }}
+        run: bazelisk run //shadow/cmd/list-consumers -- --consumers-file=${{ github.workspace }}/.github/shadow-consumers.json --workflows-pr=${{ steps.ctx.outputs.pr }} --runner-repo=${{ env.RUNNER_REPO }}
 
   # Named per consumer so the PR check reads "Shadow: <consumer>" and stays grouped under this
   # workflow. (A Checks-API check run created from here can't choose its check-suite, so it ends up
@@ -61,10 +64,12 @@ jobs:
         consumer: ${{ fromJSON(needs.prepare.outputs.consumers) }}
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: bazel-contrib/setup-bazel@0.15.0
         with:
-          node-version: 24
+          bazelisk-cache: true
+          disk-cache: true
+          repository-cache: true
       - name: Dispatch and watch
         env:
           SHADOW_PAT: ${{ secrets.SHADOW_PAT }}
-        run: node shadow/src/bin/dispatch-and-watch.mts --runner-repo=${{ env.RUNNER_REPO }} --workflows-repo=${{ github.repository }} --workflows-ref=${{ needs.prepare.outputs.sha }} --workflows-pr=${{ needs.prepare.outputs.pr }} --consumer-repo=${{ matrix.consumer.repo }} --consumer-ref=${{ matrix.consumer.ref }}
+        run: bazelisk run //shadow/cmd/dispatch-and-watch -- --runner-repo=${{ env.RUNNER_REPO }} --workflows-repo=${{ github.repository }} --workflows-ref=${{ needs.prepare.outputs.sha }} --workflows-pr=${{ needs.prepare.outputs.pr }} --consumer-repo=${{ matrix.consumer.repo }} --consumer-ref=${{ matrix.consumer.ref }}

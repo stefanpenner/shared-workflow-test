@@ -1,0 +1,19 @@
+load("@rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "setup",
+    srcs = ["setup.go"],
+    importpath = "github.com/stefanpenner-cs/reusable-workflows/internal/actions/setup",
+    visibility = ["//:__subpackages__"],
+    deps = ["//internal/ghactions"],
+)
+
+go_test(
+    name = "setup_test",
+    srcs = ["setup_test.go"],
+    embed = [":setup"],
+    deps = [
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+    ],
+)

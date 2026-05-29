@@ -1,0 +1,35 @@
+load("@rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "adapters",
+    srcs = [
+        "exec.go",
+        "git.go",
+        "github.go",
+        "workflows.go",
+    ],
+    importpath = "github.com/stefanpenner-cs/reusable-workflows/internal/shadow/adapters",
+    visibility = ["//:__subpackages__"],
+    deps = [
+        "//internal/shadow/core",
+        "@com_github_google_go_github_v66//github",
+    ],
+)
+
+go_test(
+    name = "adapters_test",
+    srcs = [
+        "exec_test.go",
+        "git_test.go",
+        "github_test.go",
+        "workflows_test.go",
+    ],
+    embed = [":adapters"],
+    deps = [
+        "//internal/shadow/core",
+        "@com_github_google_go_github_v66//github",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+        "@in_gopkg_yaml_v3//:yaml_v3",
+    ],
+)

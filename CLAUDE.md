@@ -1,99 +1,69 @@
 # CLAUDE.md
 
-Conventions for this repo (a GitHub reusable-workflow + composite-action provider).
-Follow them exactly.
+Conventions for this repo (a GitHub reusable-workflow + composite-action provider, written in **Go**
+and built with **Bazel**). Follow them exactly.
 
 ## Non-negotiable rules
 
-1. **No inline scripts in YAML.** Every action/workflow `run:` is a single invocation of
-   an external file — `node ${{ github.action_path }}/scripts/<x>.cli.mjs`. No `run: |`
-   logic; no one-liners with shell operators (`&&`, `||`, `;`, `|`, `>`, `$(...)`). This
-   is enforced by `scripts/lib/guard/check-no-inline-scripts`, run in `test.yaml`. There is
-   **no** inline exception: `shared.yaml` bootstraps via `stefanpenner/checkout-anywhere`
-   (checks this repo out to `../_reusable-workflows`, referenced via `uses: ./../_reusable-workflows/...`),
-   so even that step is a plain `uses:`. (The guard still supports an injectable allowlist, but
-   it's empty.) `actions/github-script` is also banned — it embeds an inline JS `script:` body.
-2. **Node + tested; runtime stays dependency-free.** Scripts are ESM `.mjs` on **Node 24**,
-   tested with `node:test` + `node:assert/strict`. Action/script **runtime** uses only Node
-   built-ins — no third-party runtime deps. The only npm packages are **dev tooling**: the root
-   `eslint` + `prettier` (lint this repo's own `.mjs` + YAML) and shadow's isolated `tsc`. CI gates
-   coverage (lines/functions/branches) — keep it green.
-3. **Lint + format are enforced.** `eslint` checks correctness + the **module allowlist** over
-   `.mjs` and `.mts`; `prettier` owns formatting (the two never overlap — `eslint-config-prettier`
-   and `yml/prettier` defer all style to Prettier). Both run in `test.yaml` via
-   `node scripts/lint.mjs`; config lives in `eslint.config.mjs` + `.prettierrc.json`. Run
-   `npm run lint:fix` to auto-resolve. `tsc` still owns `.mts` **types** (`shadow/typecheck.mjs`).
-4. **Module allowlist** (ESLint `no-restricted-imports`): source may import only `node:*` ·
-   relative · `yaml` · `@actions/*`. `@actions/*` is permitted but unused — narrow it later;
-   adopting one means adding it to a `package.json` (`check-deps` allows `yaml` + `@actions/*`).
-5. **CLI args, not env vars, for parameters.** Pass a script's parameters as named flags
-   (`--flag=value`), never through environment variables. Env is reserved for genuinely *global*
-   state: secrets/tokens, OTel config, and GHA-provided context/sinks (`GITHUB_OUTPUT`,
-   `GITHUB_WORKSPACE`, `HOME`). Every CLI parses argv through a **tested** parser
-   (`scripts/lib/args` for actions, `shadow/src/core/args.mts` for shadow) that validates presence,
-   rejects empty values, and fails with an error naming the offending flag. In YAML, pass values as
-   `--flag=${{ inputs.x }}` so an empty value can't shift positional parsing.
+1. **No inline scripts in YAML.** Every action/workflow `run:` is a single external invocation —
+   `bazelisk run //…`, `go …`, or a bare script — never embedded shell logic (`&&`, `||`, `;`, `|`,
+   `>`, `$(...)`, `run: |` blocks). `actions/github-script` is banned (it embeds inline JS). Enforced
+   by `internal/guard`, run in CI as `bazelisk run //tools/guard`.
+2. **Go, pure, built with Bazel.** All code is Go (`CGO_ENABLED=0`, no cgo — see `.bazelrc`), built
+   and tested with **Bazel** via **bazelisk** (version pinned in `.bazelversion`). `rules_go` +
+   `gazelle` + `hermetic_cc_toolchain`; the Go SDK is downloaded by Bazel. Third-party deps: cobra
+   (CLIs), testify (tests), go-github (shadow API), yaml.v3 (workflow edits) — declared in `go.mod`,
+   wired into `MODULE.bazel` via `bazel mod tidy`. **BUILD.bazel files are gazelle-generated** — run
+   `bazelisk run //:gazelle`, don't hand-edit.
+3. **Runtime model: `bazelisk run` on the consumer runner.** Each composite action's `run:` is
+   `bazelisk run //actions/<x> -- --flags` with `working-directory: ${{ github.action_path }}` (so
+   Bazel finds `MODULE.bazel`/`.bazelversion` at the checked-out provider root). `shared.yaml`
+   installs bazelisk via `bazel-contrib/setup-bazel` before the actions.
+4. **CLI args, not env vars, for parameters.** Parameters are named cobra flags
+   (`--flag=value`), validated non-empty via `ghactions.RequireFlags`. Env is reserved for global
+   state/sinks/secrets: `GITHUB_OUTPUT`, `GITHUB_STEP_SUMMARY`, `GITHUB_WORKSPACE`, `HOME`,
+   `SHADOW_PAT`, `GH_TOKEN`. In YAML pass values as `--flag=${{ inputs.x }}`.
+5. **Lint + coverage are enforced.** `golangci-lint` (Go) + `yamllint` (YAML) + `gofmt`; a **line**
+   coverage gate (`go run ./tools/covergate -min 90`) over the pure layers (mains/bins/adapters are
+   excluded — Go has no function/branch coverage). All run in `test.yaml`.
 
-## Layout (per action)
+## Layout
 
-- `actions/<name>/scripts/<name>.mjs` — **pure** logic: no side effects on import, no
-  `process.env` reads. Imported by the test.
-- `actions/<name>/scripts/<name>.cli.mjs` — thin entry the action invokes: parses its named
-  args (and reads env *sinks* like `GITHUB_OUTPUT`), does the real I/O, calls the pure module.
-- `actions/<name>/scripts/<name>.test.mjs` — `node:test` over the pure module.
-- Shared tooling lives in `scripts/lib/**` (guard, formatters), each with a sibling test.
+- `internal/**` — **pure** logic, all unit-tested (testify): `ghactions` (log formatting, output
+  sink, flag validation), `actions/<x>` (per-action logic), `guard`, `shadow/core`. This is the
+  coverage-gated set.
+- `internal/shadow/adapters` — **I/O** (process exec, git, go-github, workflow patching). Excluded
+  from the coverage gate; exercised by the live shadow flow + httptest.
+- `actions/<x>/main.go`, `shadow/cmd/<x>/main.go` — thin cobra entrypoints (`go_binary`). The only
+  place that parses argv / reads env sinks / writes files. Targets: `//actions/<x>`,
+  `//shadow/cmd/<x>`.
+- `tools/guard`, `tools/covergate` — CI tools.
 
 ## Style
 
-- **TDD — red → green → refactor.** All coding *and* refactoring follows this cycle: write a
-  failing test first (**red**), write the minimum code to pass it (**green**), then clean up with
-  the tests green (**refactor**). Refactors change structure, never behavior — so they start from
-  green and stay green; if no test covers what you're about to change, add one first. Keep logic in
-  small pure functions so each step is trivial to test.
-- **Simplicity & correctness over cleverness.** ELI5-clean, readable syntax; clean models, not
-  hacks. If it needs a comment to explain a trick, prefer the boring version.
-- **`try/catch/finally`, not `.catch()`/`.then()`.** Linear control flow reads top-to-bottom.
-- Pure functions take every input as an argument and return a value; inject the I/O sink
-  (e.g. the `$GITHUB_OUTPUT` path) so tests point it at a temp file.
-- **Errors: no silent failures.** Catch only the error you expect; rethrow the rest.
-  Attribute failures and chain the original with `new Error('context', { cause: err })`.
-- A `.cli.mjs` is the only place that parses argv / reads env sinks / writes files; keep it tiny.
+- **TDD — red → green → refactor.** Write a failing test first, the minimum code to pass, then clean
+  up green. Refactors change structure, not behavior. Keep logic in small pure functions.
+- **Simplicity & correctness over cleverness.** Clean models, not hacks; prefer the boring version.
+- **Errors: no silent failures.** Wrap with context (`fmt.Errorf("…: %w", err)`); only swallow the
+  error you expect (e.g. `debug.ErrProbe`).
+- A `main.go` stays tiny — flags + sinks + one call into `internal/`.
 
-## Shadow testing (`shadow/`)
+## Shadow testing (`shadow/cmd` + `internal/shadow`)
 
-All shadow-testing logic lives in `shadow/` in **this** repo (one place to change it). `.mts`
-TypeScript run on **Node 24** (type-stripping at runtime — no transpile step). Its runtime
-dependency is **`yaml`** (the only one in use); the allowlist also permits `@actions/*` (see the
-module allowlist above), and `shadow/src/bin/check-deps.mts` enforces `deps ⊆ {yaml, @actions/*}`.
-Types are checked separately by the isolated `tsc` (`node shadow/typecheck.mjs → tsc --noEmit`);
-the runtime never runs tsc. devDeps exist solely for that typecheck.
-
-Terminology (used consistently in code, **CLI flags**, and docs):
-
-- **workflows** = this repo (`reusable-workflows`) — its PRs are what we test (`--workflows-repo/-ref/-pr`).
-- **runner** = `reusable-workflows-shadow-testing` — the venue where shadow PRs run a consumer's CI; a thin `receiver.yaml` shim that checks out this repo and runs `shadow/`.
-- **consumer** = a downstream repo (from `.github/shadow-consumers.json`) we mirror to verify the draft doesn't break it.
-
-Conventions specific to `shadow/`:
-
-- **Config comes from CLI flags, not env** — bins read `--workflows-repo` etc. via `requireArgs`
-  (use `--flag=${{ ... }}` in YAML so empty values don't break parsing). Only **secrets**
-  (`SHADOW_PAT`) and GHA sinks (`GITHUB_OUTPUT`) stay in env.
-- Each shadow test is its own PR check named **`Shadow: <consumer>`** — done by naming the matrix
-  job (`name: 'Shadow: ${{ matrix.consumer.repo }}'`), NOT a Checks-API check run. (A check run
-  created from inside a workflow can't choose its check-suite, so it nests under the wrong workflow
-  and is hard to find — naming the job keeps the check correctly grouped under this workflow.)
-- The result is a markdown **table** written to the job summary (`$GITHUB_STEP_SUMMARY`); logs are
-  **plain text with full URLs** (GitHub logs don't render markdown).
-- **Runtime deps are allowlisted** to `yaml` + `@actions/*` (ESLint import rule + `check-deps`).
-  `yaml` is the only one in use; don't add anything outside the allowlist.
+Pre-merge-tests this repo's changes against real consumers (`.github/shadow-consumers.json`) under a
+real `pull_request` event. **workflows** = this repo; **runner** =
+`reusable-workflows-shadow-testing` (a `receiver.yaml` shim that checks this repo out and runs
+`bazelisk run //shadow/cmd/mirror-and-test`); **consumer** = a downstream repo we mirror. Each shadow
+test is its own PR check named `Shadow: <consumer>` (the matrix job name); results render as a
+markdown table to `$GITHUB_STEP_SUMMARY`, logs as plain text. GitHub ops go through **go-github**
+(token from `SHADOW_PAT`/`GH_TOKEN`); commits are reproducible (fixed dates) so re-runs are no-ops.
 
 ## Run locally (what CI runs)
 
 ```sh
-node scripts/lib/guard/check-no-inline-scripts.cli.mjs   # no inline run: blocks
-node scripts/lint.mjs                                     # eslint + prettier (.mjs + YAML)
-node shadow/src/bin/check-deps.mts                        # shadow: yaml-only runtime dep
-node shadow/typecheck.mjs                                 # isolated tsc --noEmit
-node --test '**/*.test.{mjs,mts}'   # tests (CI's test.yaml step adds the coverage gate)
+bazelisk run //tools/guard          # no inline run: blocks
+bazelisk test //...                 # every *_test.go
+go run ./tools/covergate -min 90    # line-coverage gate over the pure layers
+golangci-lint run                   # Go lint
+yamllint .                          # YAML lint
 ```
