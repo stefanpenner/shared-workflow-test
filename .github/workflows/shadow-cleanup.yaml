@@ -26,12 +26,11 @@ jobs:
           node-version: 20
           cache: npm
           cache-dependency-path: .shadow-harness/package-lock.json
-      - run: npm ci
+      - name: Tear down shadow PRs + branches
         working-directory: .shadow-harness
-      - working-directory: .shadow-harness
         env:
           HARNESS_REPO: ${{ env.HARNESS_REPO }}
           PROVIDER_PR: ${{ github.event.pull_request.number }}
           CONSUMERS_FILE: ${{ github.workspace }}/.github/shadow-consumers.json
           SHADOW_PAT: ${{ secrets.SHADOW_PAT }}
-        run: npx tsx src/bin/cleanup.ts
+        run: bash "$GITHUB_WORKSPACE/scripts/shadow/cleanup.sh"

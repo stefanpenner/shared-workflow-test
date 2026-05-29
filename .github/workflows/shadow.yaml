@@ -35,22 +35,17 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: actionlint (cheap gate on the provider draft)
-        run: |
-          bash <(curl -sSf https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash)
-          ./actionlint -color .github/workflows/*.y*ml
+        run: bash scripts/shadow/actionlint.sh
 
       - name: Resolve PR + head SHA
         id: ctx
         env:
           GH_TOKEN: ${{ github.token }}
-        run: |
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            echo "pr=${{ github.event.pull_request.number }}" >> "$GITHUB_OUTPUT"
-            echo "sha=${{ github.event.pull_request.head.sha }}" >> "$GITHUB_OUTPUT"
-          else
-            echo "pr=${{ inputs.pr }}" >> "$GITHUB_OUTPUT"
-            echo "sha=$(gh pr view ${{ inputs.pr }} --json headRefOid --jq .headRefOid)" >> "$GITHUB_OUTPUT"
-          fi
+          EVENT_NAME: ${{ github.event_name }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          INPUT_PR: ${{ inputs.pr }}
+        run: bash scripts/shadow/resolve-ctx.sh
 
       - uses: actions/checkout@v4
         with:
@@ -62,13 +57,12 @@ jobs:
           node-version: 20
           cache: npm
           cache-dependency-path: .shadow-harness/package-lock.json
-      - run: npm ci
-        working-directory: .shadow-harness
-      - id: list
+      - name: List consumers
+        id: list
         working-directory: .shadow-harness
         env:
           CONSUMERS_FILE: ${{ github.workspace }}/.github/shadow-consumers.json
-        run: npx tsx src/bin/list-consumers.ts
+        run: bash "$GITHUB_WORKSPACE/scripts/shadow/list-consumers.sh"
 
   shadow:
     needs: prepare
@@ -78,16 +72,21 @@ jobs:
       matrix:
         consumer: ${{ fromJSON(needs.prepare.outputs.consumers) }}
     steps:
+      # The harness is the working tree (root); the provider repo is checked out
+      # alongside under .provider so its scripts/ are on disk to invoke.
       - uses: actions/checkout@v4
         with:
           repository: ${{ env.HARNESS_REPO }}
           ref: main
+      - uses: actions/checkout@v4
+        with:
+          path: .provider
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
-      - run: npm ci
-      - run: npx tsx src/bin/dispatch-and-watch.ts
+      - name: Dispatch and watch
+        run: bash .provider/scripts/shadow/dispatch.sh
         env:
           HARNESS_REPO: ${{ env.HARNESS_REPO }}
           PROVIDER_REPO: ${{ github.repository }}
