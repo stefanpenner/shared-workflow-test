@@ -57,6 +57,8 @@ real `pull_request` event. **workflows** = this repo; **runner** =
 test is its own PR check named `Shadow: <consumer>` (the matrix job name); results render as a
 markdown table to `$GITHUB_STEP_SUMMARY`, logs as plain text. GitHub ops go through **go-github**
 (token from `SHADOW_PAT`/`GH_TOKEN`); commits are reproducible (fixed dates) so re-runs are no-ops.
+The trust model (and who may dispatch the runner) is documented in `shadow/SECURITY.md`, with a
+runtime regression test at `//shadow/cmd/check-dispatch-auth` (workflow: `dispatch-auth-test.yaml`).
 
 ## Run locally (what CI runs)
 

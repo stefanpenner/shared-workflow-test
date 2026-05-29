@@ -1,8 +1,9 @@
 module github.com/stefanpenner-cs/reusable-workflows
 
-go 1.23.0
+go 1.24.0
 
 require (
+	github.com/bazelbuild/rules_go v0.60.0
 	github.com/google/go-github/v66 v66.0.0
 	github.com/spf13/cobra v1.9.1
 	github.com/stretchr/testify v1.10.0

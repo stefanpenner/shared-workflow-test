@@ -3,4 +3,7 @@ load("@gazelle//:def.bzl", "gazelle")
 # gazelle:prefix github.com/stefanpenner-cs/reusable-workflows
 # gazelle:exclude node_modules
 # gazelle:exclude shadow/node_modules
+# rules_go's runfiles package is in go.mod so host tooling (golangci-lint, gopls) can resolve it,
+# but Bazel must build it from the rules_go module itself, not the go_deps mirror:
+# gazelle:resolve go github.com/bazelbuild/rules_go/go/runfiles @rules_go//go/runfiles
 gazelle(name = "gazelle")

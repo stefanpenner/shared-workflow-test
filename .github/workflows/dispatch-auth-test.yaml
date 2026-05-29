@@ -1,0 +1,35 @@
+name: Dispatch auth check
+
+# Security regression test for the shadow runner's trust boundary (see shadow/SECURITY.md).
+#
+# The runner repo's receiver.yaml runs DISPATCHED code with SHADOW_PAT in scope, so the entire
+# security model rests on "only authorized principals can workflow_dispatch it." This job proves
+# that holds at runtime: it POSTs the receiver's dispatch endpoint with no credential and with an
+# invalid credential and asserts GitHub refuses both (HTTP 401/403/404). All logic is Go
+# (//shadow/cmd/check-dispatch-auth); the probe never sends a valid token, so it cannot trigger a
+# real run. Needs no secrets — read-only, hits only the public dispatch endpoint.
+#
+# Not on every PR (it makes live calls to github.com): scheduled weekly + manual dispatch.
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 12 * * 1"
+
+permissions:
+  contents: read
+
+env:
+  RUNNER_REPO: stefanpenner-cs/reusable-workflows-shadow-testing
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: bazel-contrib/setup-bazel@0.15.0
+        with:
+          bazelisk-cache: true
+          disk-cache: true
+          repository-cache: true
+      - name: Assert unauthorized callers cannot dispatch the receiver
+        run: bazelisk run //shadow/cmd/check-dispatch-auth -- --runner-repo=${{ env.RUNNER_REPO }}

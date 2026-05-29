@@ -1,0 +1,78 @@
+load("@bazel_env.bzl", "bazel_env")
+load("@rules_multirun//:defs.bzl", "command", "multirun")
+load("@rules_python//python/entry_points:py_console_script_binary.bzl", "py_console_script_binary")
+
+# Hermetic yamllint (Python). Regenerate the lock after editing requirements.in with:
+#   uv pip compile tools/requirements.in --universal --generate-hashes --python-version 3.12 \
+#     -o tools/requirements_lock.txt
+py_console_script_binary(
+    name = "yamllint",
+    pkg = "@pip//yamllint",
+    visibility = ["//visibility:public"],
+)
+
+# --- workbench: aggregate lint/fix commands --------------------------------------------------
+# Each non-Go tool runs through //tools/wsrun so it sees the repo, not the runfiles tree.
+
+command(
+    name = "lint-yaml",
+    arguments = [
+        "$(rlocationpath //tools:yamllint)",
+        ".",
+    ],
+    command = "//tools/wsrun",
+    data = ["//tools:yamllint"],
+)
+
+command(
+    name = "lint-go",
+    arguments = [
+        "$(rlocationpath @multitool//tools/golangci-lint)",
+        "run",
+    ],
+    command = "//tools/wsrun",
+    data = ["@multitool//tools/golangci-lint"],
+)
+
+command(
+    name = "fix-go",
+    arguments = [
+        "$(rlocationpath @multitool//tools/golangci-lint)",
+        "run",
+        "--fix",
+    ],
+    command = "//tools/wsrun",
+    data = ["@multitool//tools/golangci-lint"],
+)
+
+# `bazel run //tools:lint` — every static check CI runs, in one shot.
+multirun(
+    name = "lint",
+    commands = [
+        "//tools/no-inline-scripts",
+        ":lint-go",
+        ":lint-yaml",
+    ],
+)
+
+# `bazel run //tools:fix` — apply the auto-fixable subset.
+multirun(
+    name = "fix",
+    commands = [":fix-go"],
+)
+
+# --- workbench: PATH-mountable tool directory ------------------------------------------------
+# `bazel run //tools:bazel_env` builds a bin/ of Bazel-managed tools; add it to PATH (or use
+# direnv) and `yamllint`, `golangci-lint`, `go`, `gofmt` resolve to these hermetic versions with
+# no host installs. See CLAUDE.md "Run locally".
+bazel_env(
+    name = "bazel_env",
+    tools = {
+        # `go` carries the hermetic SDK; `go fmt` covers gofmt. golangci-lint + yamllint are the
+        # CI linters; bazelisk is your existing host launcher, surfaced here for one PATH to rule
+        # them all.
+        "go": "@rules_go//go",
+        "golangci-lint": "@multitool//tools/golangci-lint",
+        "yamllint": "//tools:yamllint",
+    },
+)
