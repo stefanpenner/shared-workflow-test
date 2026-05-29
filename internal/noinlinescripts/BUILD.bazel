@@ -5,6 +5,7 @@ go_library(
     srcs = ["noinlinescripts.go"],
     importpath = "github.com/stefanpenner-cs/reusable-workflows/internal/noinlinescripts",
     visibility = ["//:__subpackages__"],
+    deps = ["@in_gopkg_yaml_v3//:yaml_v3"],
 )
 
 go_test(

