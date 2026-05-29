@@ -1,8 +1,8 @@
-// Package guard enforces the "no inline scripts" rule: every action/workflow `run:` must be a
+// Package noinlinescripts enforces the "no inline scripts" rule: every action/workflow `run:` must be a
 // single external invocation — a bazelisk/node/bash/sh call or a bare script path — never embedded
 // shell logic, and `actions/github-script` is banned (it embeds inline JS). Ported from the old
 // scripts/lib/guard/check-no-inline-scripts.mjs; pure + tested. File discovery lives in tools/guard.
-package guard
+package noinlinescripts
 
 import (
 	"fmt"

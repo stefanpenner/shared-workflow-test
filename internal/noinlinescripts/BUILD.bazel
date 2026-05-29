@@ -1,0 +1,15 @@
+load("@rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "noinlinescripts",
+    srcs = ["noinlinescripts.go"],
+    importpath = "github.com/stefanpenner-cs/reusable-workflows/internal/noinlinescripts",
+    visibility = ["//:__subpackages__"],
+)
+
+go_test(
+    name = "noinlinescripts_test",
+    srcs = ["noinlinescripts_test.go"],
+    embed = [":noinlinescripts"],
+    deps = ["@com_github_stretchr_testify//assert"],
+)
