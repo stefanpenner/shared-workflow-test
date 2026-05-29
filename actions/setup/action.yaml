@@ -22,4 +22,4 @@ runs:
       env:
         PROJECT_NAME: ${{ inputs.project-name }}
         NODE_VERSION: ${{ inputs.node-version }}
-      run: "${{ github.action_path }}/scripts/run.sh"
+      run: "node ${{ github.action_path }}/scripts/setup.cli.mjs"

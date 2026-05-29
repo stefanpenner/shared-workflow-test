@@ -5,23 +5,4 @@ runs:
   using: composite
   steps:
     - shell: bash
-      run: |
-        echo "--- \$HOME top-level ---"
-        ls -la "$HOME"
-        echo ""
-        echo "--- \$HOME/work/ top-level ---"
-        ls -la "$HOME/work/" 2>/dev/null || echo "(not found)"
-        echo ""
-        echo "--- project tree ---"
-        find "$GITHUB_WORKSPACE" -not -path '*/.git/*' -not -path '*/node_modules/*' 2>/dev/null || true
-    - shell: bash
-      run: |
-        if git rev-parse --git-dir > /dev/null 2>&1; then
-          git status
-          echo "--- unstaged changes ---"
-          git diff
-          echo "--- staged changes ---"
-          git diff --cached
-        else
-          echo "No git repository in working directory"
-        fi
+      run: "node ${{ github.action_path }}/scripts/debug.cli.mjs"

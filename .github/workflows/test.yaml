@@ -1,0 +1,26 @@
+name: Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      # Every step's run: is a single external-script invocation — no inline logic
+      # (which is exactly what the guard below enforces across this repo).
+      - name: No inline scripts
+        run: "node scripts/lib/guard/check-no-inline-scripts.cli.mjs"
+
+      # Globs are single-quoted so Node (not the shell) expands them. Coverage is
+      # gated: the build fails below the thresholds. cli/test files are excluded.
+      - name: Unit tests + coverage gate
+        run: "node --test --experimental-test-coverage --test-coverage-lines=100 --test-coverage-functions=100 --test-coverage-branches=95 '--test-coverage-include=actions/**/*.mjs' '--test-coverage-include=scripts/**/*.mjs' '--test-coverage-exclude=**/*.test.mjs' '--test-coverage-exclude=**/*.cli.mjs' 'actions/**/*.test.mjs' 'scripts/**/*.test.mjs'"

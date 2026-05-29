@@ -14,6 +14,9 @@ jobs:
   ci:
     runs-on: ubuntu-latest
     steps:
+      # This is the ONE sanctioned inline run: in the repo — it runs before any
+      # checkout, so no repo-local script exists on disk yet to call. The
+      # no-inline-scripts guard whitelists it by this exact step name.
       # TODO: replace these two steps with a dedicated "setup-shared-actions"
       # GitHub Action once published, so consumers get a single `uses:`.
       - name: Set up shared actions (exclude from git)
