@@ -1,0 +1,6 @@
+load("@gazelle//:def.bzl", "gazelle")
+
+# gazelle:prefix github.com/stefanpenner-cs/reusable-workflows
+# gazelle:exclude node_modules
+# gazelle:exclude shadow/node_modules
+gazelle(name = "gazelle")

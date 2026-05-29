@@ -1,0 +1,22 @@
+load("@rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "ghactions",
+    srcs = [
+        "args.go",
+        "format.go",
+        "output.go",
+    ],
+    importpath = "github.com/stefanpenner-cs/reusable-workflows/internal/ghactions",
+    visibility = ["//:__subpackages__"],
+)
+
+go_test(
+    name = "ghactions_test",
+    srcs = [
+        "args_test.go",
+        "format_test.go",
+    ],
+    embed = [":ghactions"],
+    deps = ["@com_github_stretchr_testify//assert"],
+)
