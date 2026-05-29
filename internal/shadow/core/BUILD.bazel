@@ -1,0 +1,30 @@
+load("@rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "core",
+    srcs = [
+        "branchname.go",
+        "consumers.go",
+        "dispatch.go",
+        "mirrortree.go",
+        "requireenv.go",
+    ],
+    importpath = "github.com/stefanpenner-cs/reusable-workflows/internal/shadow/core",
+    visibility = ["//:__subpackages__"],
+)
+
+go_test(
+    name = "core_test",
+    srcs = [
+        "branchname_test.go",
+        "consumers_test.go",
+        "dispatch_test.go",
+        "mirrortree_test.go",
+        "requireenv_test.go",
+    ],
+    embed = [":core"],
+    deps = [
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+    ],
+)
