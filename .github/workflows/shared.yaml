@@ -14,10 +14,12 @@ jobs:
   ci:
     runs-on: ubuntu-latest
     steps:
-      - name: Exclude shared actions from git
+      # TODO: replace these two steps with a dedicated "setup-shared-actions"
+      # GitHub Action once published, so consumers get a single `uses:`.
+      - name: Set up shared actions (exclude from git)
         run: mkdir -p .git/info && echo '.github/_shared-workflow/' >> .git/info/exclude
 
-      - name: Checkout shared actions
+      - name: Set up shared actions (checkout)
         uses: actions/checkout@v4
         with:
           repository: stefanpenner/shared-workflow-test

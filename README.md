@@ -8,10 +8,11 @@ Reusable workflows (`workflow_call`) are interpreted **server-side** by GitHub â
 
 ```yaml
 steps:
-  - name: Exclude shared actions from git
+  - name: Set up shared actions (exclude from git)
     run: mkdir -p .git/info && echo '.github/_shared-workflow/' >> .git/info/exclude
 
-  - uses: actions/checkout@v4
+  - name: Set up shared actions (checkout)
+    uses: actions/checkout@v4
     with:
       repository: stefanpenner/shared-workflow-test
       ref: ${{ inputs.ref || 'main' }}
