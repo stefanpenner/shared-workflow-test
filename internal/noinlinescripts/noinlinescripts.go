@@ -26,6 +26,7 @@ var (
 	interpRe = regexp.MustCompile(`^(go|bash|sh|bazelisk|bazel)\s+\S`)
 	bareRe   = regexp.MustCompile(`^\S+\.(mjs|cjs|js|sh)$`)
 	ghScript = regexp.MustCompile(`^actions/github-script@`)
+	flagRe   = regexp.MustCompile(`--\S`) // a long flag (`--name`); the bare `-- ` separator doesn't match
 )
 
 // IsSingleInvocation reports whether value (the fully-folded run: command) is a single external
@@ -60,6 +61,7 @@ func InlineErrors(yamlText string, allowNames map[string]bool) []Violation {
 	if err := yaml.Unmarshal([]byte(yamlText), &doc); err != nil {
 		return []Violation{{Line: 1, Message: "could not parse YAML: " + err.Error()}}
 	}
+	lines := strings.Split(yamlText, "\n")
 	var out []Violation
 	var walk func(n *yaml.Node)
 	walk = func(n *yaml.Node) {
@@ -83,6 +85,9 @@ func InlineErrors(yamlText string, allowNames map[string]bool) []Violation {
 						out = append(out, Violation{val.Line, "empty run: — nothing to invoke"})
 					case !IsSingleInvocation(val.Value):
 						out = append(out, Violation{val.Line, fmt.Sprintf("inline logic in run: %q — call an external script instead", val.Value)})
+					case val.Line-1 < len(lines) && len(flagRe.FindAllString(lines[val.Line-1], -1)) >= 2:
+						// readability: many flags crammed onto the run: line → one per continuation line
+						out = append(out, Violation{val.Line, "run: has multiple flags on one line — split them one per line for readability"})
 					}
 				}
 			}
