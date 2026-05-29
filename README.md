@@ -8,10 +8,11 @@ Reusable workflows (`workflow_call`) are interpreted **server-side** by GitHub �
 
 ```yaml
 steps:
-  - name: Exclude shared actions from git
+  - name: Set up shared actions (exclude from git)
     run: mkdir -p .git/info && echo '.github/_shared-workflow/' >> .git/info/exclude
 
-  - uses: actions/checkout@v4
+  - name: Set up shared actions (checkout)
+    uses: actions/checkout@v4
     with:
       repository: stefanpenner-cs/reusable-workflows
       ref: ${{ inputs.ref || 'main' }}
@@ -30,13 +31,40 @@ steps:
 
 ```
 actions/
-  setup/          # Set up the project environment
-  lint/           # Run linting checks
-  test/           # Run the test suite
-  debug/          # Print file tree + git status (diagnostics)
+  setup/   # Set up the project environment
+  lint/    # Run linting checks
+  test/    # Run the test suite
+  debug/   # Print file tree + git status (diagnostics)
+scripts/
+  lib/guard/   # check-no-inline-scripts: enforces the "no inline scripts" rule
 ```
 
-Each action is self-contained: `action.yaml` defines inputs/outputs and delegates to `scripts/run.sh` via `${{ github.action_path }}` (the `debug` action is inline).
+Each action is self-contained: `action.yaml` defines inputs/outputs and invokes an
+external Node script via `node ${{ github.action_path }}/scripts/<name>.cli.mjs`.
+
+## Scripts &amp; testing conventions
+
+All executable logic lives in **external scripts**, never in inline `run:` blocks
+(see the guard below). Each script follows a three-file pattern:
+
+- `<name>.mjs` — pure logic, no side effects on import, no `process.env` reads. Imported by the test.
+- `<name>.cli.mjs` — thin entry the action invokes; reads env and does the real I/O.
+- `<name>.test.mjs` — [`node:test`](https://nodejs.org/api/test.html) + `node:assert`, **zero `node_modules`**.
+
+Run the suite (and the coverage gate) locally exactly as CI does:
+
+```sh
+node scripts/lib/guard/check-no-inline-scripts.cli.mjs   # no inline run: blocks
+node --test --experimental-test-coverage \
+  --test-coverage-lines=100 --test-coverage-functions=100 --test-coverage-branches=95 \
+  '--test-coverage-include=actions/**/*.mjs' '--test-coverage-include=scripts/**/*.mjs' \
+  '--test-coverage-exclude=**/*.test.mjs' '--test-coverage-exclude=**/*.cli.mjs' \
+  'actions/**/*.test.mjs' 'scripts/**/*.test.mjs'
+```
+
+`.github/workflows/test.yaml` runs both on every push and PR. The **only** sanctioned
+inline `run:` is the pre-checkout bootstrap step in `shared.yaml` (nothing is on disk
+yet to call); the guard whitelists it by its exact step name.
 
 ## Usage
 

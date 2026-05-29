@@ -16,4 +16,4 @@ runs:
       env:
         TEST_SUITE: ${{ inputs.suite }}
         COVERAGE_ENABLED: ${{ inputs.coverage }}
-      run: "${{ github.action_path }}/scripts/run.sh"
+      run: "node ${{ github.action_path }}/scripts/test.cli.mjs"
