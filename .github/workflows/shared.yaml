@@ -22,7 +22,7 @@ jobs:
       - name: Set up shared actions (checkout)
         uses: actions/checkout@v4
         with:
-          repository: stefanpenner/shared-workflow-test
+          repository: stefanpenner-cs/reusable-workflows
           ref: ${{ inputs.ref || 'main'}}
           path: .github/_shared-workflow
 

@@ -1,4 +1,4 @@
-# shared-workflow-test
+# reusable-workflows
 
 A reusable GitHub Actions workflow that ships its own composite actions and scripts.
 
@@ -14,7 +14,7 @@ steps:
   - name: Set up shared actions (checkout)
     uses: actions/checkout@v4
     with:
-      repository: stefanpenner/shared-workflow-test
+      repository: stefanpenner-cs/reusable-workflows
       ref: ${{ inputs.ref || 'main' }}
       path: .github/_shared-workflow
 
@@ -46,7 +46,7 @@ From any other repo:
 ```yaml
 jobs:
   ci:
-    uses: stefanpenner/shared-workflow-test/.github/workflows/shared.yaml@main
+    uses: stefanpenner-cs/reusable-workflows/.github/workflows/shared.yaml@main
     with:
       ref: main            # required: which version of the shared actions to fetch
       project-name: my-app # optional
@@ -61,7 +61,7 @@ The default `GITHUB_TOKEN` is scoped to the caller repo. For private provider re
 ```yaml
 - uses: actions/checkout@v4
   with:
-    repository: stefanpenner/shared-workflow-test
+    repository: stefanpenner-cs/reusable-workflows
     ref: ${{ inputs.ref || 'main' }}
     token: ${{ secrets.PROVIDER_REPO_TOKEN }}
     path: .github/_shared-workflow
@@ -71,4 +71,4 @@ Alternatively, if both repos are in the same org, enable "Accessible from reposi
 
 ## See also
 
-- [shared-workflow-consumer](https://github.com/stefanpenner/shared-workflow-consumer) — example consumer repo
+- [reusable-workflows-consumer](https://github.com/stefanpenner-cs/reusable-workflows-consumer) — example consumer repo
