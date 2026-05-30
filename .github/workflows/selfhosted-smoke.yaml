@@ -1,0 +1,17 @@
+name: Self-hosted smoke
+# Temporary manual check: proves a job runs on the local self-hosted runners and uses the
+# co-located bazel-remote cache (wired via /etc/bazel.bazelrc). Safe on a public repo —
+# workflow_dispatch is maintainer-only. Remove after verifying.
+on: { workflow_dispatch: {} }
+
+jobs:
+  smoke:
+    runs-on: [self-hosted, local-cache]
+    steps:
+      - run: |
+          echo "host: $(hostname)"
+          echo "--- system bazelrc (cache wiring) ---"; cat /etc/bazel.bazelrc
+      - uses: actions/checkout@v4
+      - uses: bazel-contrib/setup-bazel@0.15.0
+      - name: Build via the local remote cache
+        run: bazelisk build //actions/... 2>&1 | tail -25
