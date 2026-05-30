@@ -27,6 +27,14 @@ func main() {
 	min := flag.Float64("min", 90, "minimum line coverage percentage")
 	flag.Parse()
 
+	// `bazel run` executes in the runfiles tree; BUILD_WORKSPACE_DIRECTORY points back at the repo
+	// root so the `go test ./internal/...` below resolves.
+	if ws := os.Getenv("BUILD_WORKSPACE_DIRECTORY"); ws != "" {
+		if err := os.Chdir(ws); err != nil {
+			fail(err)
+		}
+	}
+
 	profile, err := os.CreateTemp("", "cover-*.out")
 	if err != nil {
 		fail(err)
@@ -34,8 +42,10 @@ func main() {
 	defer os.Remove(profile.Name())
 	profile.Close()
 
+	// No -coverpkg: each package is measured by its own tests. Spanning -coverpkg across the
+	// gated packages structurally under-counts (cross-binary zero-count blocks), so we list the
+	// pure layers as the test targets and let each measure itself; bins/adapters aren't listed.
 	args := append([]string{"test", "-covermode=count",
-		"-coverpkg=" + strings.Join(gatedPackages, ","),
 		"-coverprofile=" + profile.Name()}, gatedPackages...)
 	cmd := exec.Command("go", args...)
 	cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr

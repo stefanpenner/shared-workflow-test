@@ -35,7 +35,7 @@ jobs:
       sha: ${{ steps.ctx.outputs.sha }}
     steps:
       - uses: actions/checkout@v4
-      - uses: bazel-contrib/setup-bazel@0.15.0
+      - uses: bazel-contrib/setup-bazel@0.19.0
         with:
           bazelisk-cache: true
           disk-cache: true
@@ -45,11 +45,19 @@ jobs:
         id: ctx
         env:
           GH_TOKEN: ${{ github.token }}
-        run: bazelisk run //shadow/cmd/resolve-ctx -- --event-name=${{ github.event_name }} --pr-number=${{ github.event.pull_request.number }} --head-sha=${{ github.event.pull_request.head.sha }} --input-pr=${{ inputs.pr }} --workflows-repo=${{ github.repository }}
+        run: bazelisk run //shadow/cmd/resolve-ctx --
+          --event-name=${{ github.event_name }}
+          --pr-number=${{ github.event.pull_request.number }}
+          --head-sha=${{ github.event.pull_request.head.sha }}
+          --input-pr=${{ inputs.pr }}
+          --workflows-repo=${{ github.repository }}
 
       - name: List consumers
         id: list
-        run: bazelisk run //shadow/cmd/list-consumers -- --consumers-file=${{ github.workspace }}/.github/shadow-consumers.json --workflows-pr=${{ steps.ctx.outputs.pr }} --runner-repo=${{ env.RUNNER_REPO }}
+        run: bazelisk run //shadow/cmd/list-consumers --
+          --consumers-file=${{ github.workspace }}/.github/shadow-consumers.json
+          --workflows-pr=${{ steps.ctx.outputs.pr }}
+          --runner-repo=${{ env.RUNNER_REPO }}
 
   # Named per consumer so the PR check reads "Shadow: <consumer>" and stays grouped under this
   # workflow. (A Checks-API check run created from here can't choose its check-suite, so it ends up
@@ -64,7 +72,7 @@ jobs:
         consumer: ${{ fromJSON(needs.prepare.outputs.consumers) }}
     steps:
       - uses: actions/checkout@v4
-      - uses: bazel-contrib/setup-bazel@0.15.0
+      - uses: bazel-contrib/setup-bazel@0.19.0
         with:
           bazelisk-cache: true
           disk-cache: true
@@ -72,4 +80,10 @@ jobs:
       - name: Dispatch and watch
         env:
           SHADOW_PAT: ${{ secrets.SHADOW_PAT }}
-        run: bazelisk run //shadow/cmd/dispatch-and-watch -- --runner-repo=${{ env.RUNNER_REPO }} --workflows-repo=${{ github.repository }} --workflows-ref=${{ needs.prepare.outputs.sha }} --workflows-pr=${{ needs.prepare.outputs.pr }} --consumer-repo=${{ matrix.consumer.repo }} --consumer-ref=${{ matrix.consumer.ref }}
+        run: bazelisk run //shadow/cmd/dispatch-and-watch --
+          --runner-repo=${{ env.RUNNER_REPO }}
+          --workflows-repo=${{ github.repository }}
+          --workflows-ref=${{ needs.prepare.outputs.sha }}
+          --workflows-pr=${{ needs.prepare.outputs.pr }}
+          --consumer-repo=${{ matrix.consumer.repo }}
+          --consumer-ref=${{ matrix.consumer.ref }}

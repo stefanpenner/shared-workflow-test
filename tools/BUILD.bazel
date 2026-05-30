@@ -55,10 +55,20 @@ multirun(
     ],
 )
 
+# Auto-format multi-flag run: statements one per line (the linted readability rule).
+command(
+    name = "fix-run-args",
+    arguments = ["--fix"],
+    command = "//tools/no-inline-scripts",
+)
+
 # `bazel run //tools:fix` — apply the auto-fixable subset.
 multirun(
     name = "fix",
-    commands = [":fix-go"],
+    commands = [
+        ":fix-go",
+        ":fix-run-args",
+    ],
 )
 
 # --- workbench: PATH-mountable tool directory ------------------------------------------------

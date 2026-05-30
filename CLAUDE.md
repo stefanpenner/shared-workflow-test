@@ -63,9 +63,30 @@ runtime regression test at `//shadow/cmd/check-dispatch-auth` (workflow: `dispat
 ## Run locally (what CI runs)
 
 ```sh
-bazelisk run //tools/no-inline-scripts          # no inline run: blocks
+bazelisk run //tools:lint           # no-inline-scripts + golangci-lint + yamllint (hermetic)
+bazelisk run //tools:fix            # apply the auto-fixable subset (golangci-lint --fix)
 bazelisk test //...                 # every *_test.go
 go run ./tools/covergate -min 90    # line-coverage gate over the pure layers
-golangci-lint run                   # Go lint
-yamllint .                          # YAML lint
 ```
+
+### Hermetic dev workbench (no host installs)
+
+All CLI tools are Bazel-pinned, so local runs match CI byte-for-byte: golangci-lint (via
+`rules_multitool`, `tools/multitool.lock.json`), yamllint (via `rules_python`, `tools/requirements_lock.txt`),
+and the Go SDK. Two ways to use them:
+
+```sh
+bazelisk run //tools:lint           # aggregate; or //tools:lint-go, //tools:lint-yaml individually
+```
+
+Or put them on `PATH` with [`bazel_env`](https://github.com/buildbuddy-io/bazel_env.bzl) + direnv —
+a `.envrc` is committed; run `direnv allow` once (after enabling the direnv shell hook), then plain
+`yamllint .`, `golangci-lint run`, and `go` resolve to the pinned versions:
+
+```sh
+bazelisk run //tools:bazel_env      # (re)generate the PATH bin dir; direnv picks it up
+```
+
+Tools that operate on the source tree run through `//tools/wsrun`, which cd's into
+`BUILD_WORKSPACE_DIRECTORY` first (the non-Go analogue of the `os.Chdir` our Go tools do). golangci-lint
+config is `.golangci.yml`; covergate still uses the host Go toolchain (`go run`).

