@@ -28,7 +28,7 @@ jobs:
       # The actions are Go binaries built on demand by Bazel (each `run:` is `bazelisk run //…`).
       # Install + cache bazelisk here so the first action pays a warm build, not a cold one.
       - name: Set up Bazel
-        uses: bazel-contrib/setup-bazel@0.15.0
+        uses: bazel-contrib/setup-bazel@0.19.0
         with:
           bazelisk-cache: true
           disk-cache: true

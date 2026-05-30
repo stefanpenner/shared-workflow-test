@@ -35,7 +35,7 @@ jobs:
       sha: ${{ steps.ctx.outputs.sha }}
     steps:
       - uses: actions/checkout@v4
-      - uses: bazel-contrib/setup-bazel@0.15.0
+      - uses: bazel-contrib/setup-bazel@0.19.0
         with:
           bazelisk-cache: true
           disk-cache: true
@@ -72,7 +72,7 @@ jobs:
         consumer: ${{ fromJSON(needs.prepare.outputs.consumers) }}
     steps:
       - uses: actions/checkout@v4
-      - uses: bazel-contrib/setup-bazel@0.15.0
+      - uses: bazel-contrib/setup-bazel@0.19.0
         with:
           bazelisk-cache: true
           disk-cache: true
